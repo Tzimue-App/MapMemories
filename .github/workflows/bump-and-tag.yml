@@ -1,0 +1,52 @@
+name: "Bump Version & Tag"
+
+# Triggered after a merge to dev or test.
+# Reads bump type from CHANGELOG.md, increments version, commits, tags, and pushes.
+# paths-ignore prevents this workflow from re-triggering on its own commits
+# (which only touch CHANGELOG.md and build.gradle.kts).
+# The job-level 'if' is a safety net for mixed pushes (bot commit + other commits together).
+
+on:
+  push:
+    branches:
+      - dev
+      - test
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "package.json"
+
+jobs:
+  bump:
+    # Safety net: skip if the head commit is the bot's own bump commit
+    if: "!contains(github.event.head_commit.message, '[bump_version]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.BUMP_TOKEN || github.token }}
+          fetch-depth: 0  # Full history needed for back-merge
+
+      - name: Check Token Presence
+        run: |
+          if [ -z "${{ secrets.BUMP_TOKEN }}" ]; then
+            echo "::warning::BUMP_TOKEN is empty. Falling back to GITHUB_TOKEN. Pushed tags will NOT trigger release workflows."
+          else
+            echo "✅ BUMP_TOKEN is present."
+          fi
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run bump_version.py
+        run: python bump_version.py --ci

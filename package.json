@@ -1,0 +1,10 @@
+{
+  "name": "remembermap",
+  "version": "0.0.1-a",
+  "private": true,
+  "description": "Collaborative interactive mapping application",
+  "test": "test",
+  "scripts": {
+    "bump-version": "python bump_version.py"
+  }
+}
