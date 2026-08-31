@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-Description
+Add test github actions
 
 <!--
 BUMP_TYPE :
@@ -10,7 +10,7 @@ BUMP_TYPE :
 2 = Minor (0.X.0)
 3 = Patch (0.0.X)
 -->
-Bump: [numéro]
+Bump: 3
 
 ### Features
 
@@ -19,6 +19,8 @@ Bump: [numéro]
 ### Bug Fixes
 
 ### Deployment & Configuration
+
+- Add test github actions
 
 ### ChangeLog
 

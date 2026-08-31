@@ -1,0 +1,63 @@
+name: "Test Suite"
+
+# Runs backend (Java 25 / Maven) and frontend (Node / npm) tests
+# on every push to feature branches and on every Pull Request targeting dev/test/main.
+# Version bumping and Docker packaging are blocked if these tests fail.
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - test
+      - main
+  push:
+    branches:
+      - "feature/**"
+
+jobs:
+  # ─── Backend Tests (Java 25 + Maven) ───────────────────────
+  backend-tests:
+    name: "Backend Tests (Java 25)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "25"
+          cache: "maven"
+
+      - name: Run Maven tests
+        run: mvn -B clean verify --fail-at-end
+
+  # ─── Frontend Tests (Node + npm) ───────────────────────────
+  frontend-tests:
+    name: "Frontend Tests (Vitest)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test -- --run

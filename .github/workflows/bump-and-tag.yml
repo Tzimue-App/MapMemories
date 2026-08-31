@@ -1,9 +1,10 @@
 name: "Bump Version & Tag"
 
 # Triggered after a merge to dev or test.
-# Reads bump type from CHANGELOG.md, increments version, commits, tags, and pushes.
+# First runs all tests (backend + frontend) as a gate, then reads bump type
+# from CHANGELOG.md, increments version, commits, tags, and pushes.
 # paths-ignore prevents this workflow from re-triggering on its own commits
-# (which only touch CHANGELOG.md and build.gradle.kts).
+# (which only touch CHANGELOG.md and package.json).
 # The job-level 'if' is a safety net for mixed pushes (bot commit + other commits together).
 
 on:
@@ -16,8 +17,59 @@ on:
       - "package.json"
 
 jobs:
+  # ─── Gate: Backend Tests ────────────────────────────────────
+  backend-tests:
+    name: "Backend Tests (Java 25)"
+    if: "!contains(github.event.head_commit.message, '[bump_version]')"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "25"
+          cache: "maven"
+
+      - name: Run Maven tests
+        run: mvn -B clean verify --fail-at-end
+
+  # ─── Gate: Frontend Tests ───────────────────────────────────
+  frontend-tests:
+    name: "Frontend Tests (Vitest)"
+    if: "!contains(github.event.head_commit.message, '[bump_version]')"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test -- --run
+
+  # ─── Bump Version (only after tests pass) ───────────────────
   bump:
-    # Safety net: skip if the head commit is the bot's own bump commit
+    name: "Bump Version & Tag"
+    needs: [backend-tests, frontend-tests]
     if: "!contains(github.event.head_commit.message, '[bump_version]')"
     runs-on: ubuntu-latest
     permissions:
