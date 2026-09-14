@@ -1,7 +1,7 @@
 {
   "name": "remembermap-frontend",
   "private": true,
-  "version": "0.1.0-a",
+  "version": "0.2.0-a",
   "type": "module",
   "scripts": {
     "dev": "vite",
