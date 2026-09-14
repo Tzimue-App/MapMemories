@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: remembermap-backend
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/remembermap}
+    username: ${SPRING_DATASOURCE_USERNAME:remembermap}
+    password: ${SPRING_DATASOURCE_PASSWORD:remembermap}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  accessKey: ${MINIO_ACCESS_KEY:remembermap_access}
+  secretKey: ${MINIO_SECRET_KEY:remembermap_secret}
+  bucket: ${MINIO_BUCKET:remembermap-photos}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+MAVEN_DIR="/tmp/apache-maven-3.9.9"
+MVN_EXEC="$MAVEN_DIR/bin/mvn"
+
+if [ ! -f "$MVN_EXEC" ]; then
+    echo "Downloading and extracting Apache Maven 3.9.9 for build environment..."
+    mkdir -p /tmp
+    curl -fsSL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.tar.gz | tar -xz -C /tmp
+fi
+
+exec "$MVN_EXEC" "$@"

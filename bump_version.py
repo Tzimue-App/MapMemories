@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-bump_version.py — Automated version bumping for the Skite Android project.
+bump_version.py — Automated version bumping for RememberMap monorepo project.
 
-Reads the bump type from CHANGELOG.md [Unreleased] section,
-calculates the new SemVer version, updates build.gradle.kts and CHANGELOG.md,
+Reads component bump types (Backend Bump / Frontend Bump) from CHANGELOG.md [Unreleased] section,
+calculates SemVer for Backend, Frontend, and Root (using the largest bump),
+updates root package.json, frontend/package.json, backend/pom.xml, and CHANGELOG.md,
 then commits, tags, and pushes.
 
 Usage:
@@ -31,6 +32,8 @@ if hasattr(sys.stderr, 'reconfigure'):
 # ──────────────────────────────────────────────
 
 PACKAGE_JSON = "package.json"
+FRONTEND_PACKAGE_JSON = os.path.join("frontend", "package.json")
+BACKEND_POM = os.path.join("backend", "pom.xml")
 CHANGELOG_FILE = "CHANGELOG.md"
 PROJECT_NAME = "RememberMap"
 
@@ -39,8 +42,12 @@ VERSION_BLOCK_PATTERN = re.compile(
     re.DOTALL
 )
 
-SECTION_HEADERS = ["Features", "Patches", "Bug Fixes", "Deployment & Configuration", "ChangeLog"]
-
+SECTION_HEADERS = [
+    "Backend",
+    "Frontend",
+    "Deployment & Configuration",
+    "ChangeLog"
+]
 
 BRANCH_SUFFIX_MAP = {
     "dev": "-a",
@@ -56,14 +63,26 @@ BUMP_TYPE :
 1 = Major (X.0.0)
 2 = Minor (0.X.0)
 3 = Patch (0.0.X)
+none = Pas de bump
 -->
-Bump: [Numéro]
+Backend Bump: none
+Frontend Bump: none
 
-### Features
+### Backend
+#### Features
 
-### Patches
+#### Patches
 
-### Bug Fixes
+#### Bug Fixes
+
+
+### Frontend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
 
 ### Deployment & Configuration
 
@@ -108,8 +127,8 @@ def write_file(path, content):
 # Version reading
 # ──────────────────────────────────────────────
 
-def get_current_version():
-    """Reads version from package.json."""
+def get_root_version():
+    """Reads main version from root package.json."""
     try:
         content = read_file(PACKAGE_JSON)
         data = json.loads(content)
@@ -117,21 +136,75 @@ def get_current_version():
         if not version:
             print(f"❌ Could not find version in {PACKAGE_JSON}")
             sys.exit(1)
-        # Ensure it has the 'v' prefix when returned to match calculation expectations
-        if version.startswith('v'):
-            return version
-        return f"v{version}"
+        return version if version.startswith('v') else f"v{version}"
     except Exception as e:
         print(f"❌ Error reading {PACKAGE_JSON}: {e}")
         sys.exit(1)
+
+
+def get_frontend_version():
+    """Reads version from frontend/package.json."""
+    if not os.path.exists(FRONTEND_PACKAGE_JSON):
+        return get_root_version()
+    try:
+        content = read_file(FRONTEND_PACKAGE_JSON)
+        data = json.loads(content)
+        version = data.get("version", "0.0.1")
+        return version if version.startswith('v') else f"v{version}"
+    except Exception as e:
+        print(f"⚠️ Error reading {FRONTEND_PACKAGE_JSON}: {e}")
+        return get_root_version()
+
+
+def get_backend_version():
+    """Reads version from backend/pom.xml."""
+    if not os.path.exists(BACKEND_POM):
+        return get_root_version()
+    try:
+        content = read_file(BACKEND_POM)
+        match = re.search(r'<artifactId>remembermap-backend</artifactId>\s*<version>([^<]+)</version>', content)
+        if not match:
+            match = re.search(r'<version>([^<]+)</version>', content)
+        if not match:
+            return get_root_version()
+        ver = match.group(1).replace("-SNAPSHOT", "")
+        return ver if ver.startswith('v') else f"v{ver}"
+    except Exception as e:
+        print(f"⚠️ Error reading {BACKEND_POM}: {e}")
+        return get_root_version()
 
 
 # ──────────────────────────────────────────────
 # Bump type extraction from CHANGELOG
 # ──────────────────────────────────────────────
 
-def get_bump_type_from_changelog():
-    """Extracts the bump type (1-3) from the [Unreleased] section of CHANGELOG.md."""
+def parse_bump_val(val_str):
+    """Parses a bump string value into 1, 2, 3 or None."""
+    if not val_str:
+        return None
+    val_str = val_str.strip().lower()
+    if val_str in ("1", "major"):
+        return 1
+    if val_str in ("2", "minor"):
+        return 2
+    if val_str in ("3", "patch"):
+        return 3
+    if val_str in ("none", "null", "0", "pas de bump", "numéro", "numéro"):
+        return None
+    try:
+        val_int = int(val_str)
+        if val_int in (1, 2, 3):
+            return val_int
+    except ValueError:
+        pass
+    return None
+
+
+def get_bump_types_from_changelog():
+    """
+    Extracts (backend_bump, frontend_bump) from the [Unreleased] section of CHANGELOG.md.
+    Values are 1 (Major), 2 (Minor), 3 (Patch), or None.
+    """
     content = read_file(CHANGELOG_FILE)
 
     unreleased_match = re.search(
@@ -139,14 +212,24 @@ def get_bump_type_from_changelog():
     )
     if not unreleased_match:
         print("❌ Section [Unreleased] introuvable dans CHANGELOG.md")
-        return None
+        return None, None
 
     unreleased_content = unreleased_match.group(1)
-    match = re.search(r"bump\s*:\s*\[?(\d)\]?", unreleased_content, re.IGNORECASE)
-    if match:
-        return int(match.group(1))
 
-    return None
+    backend_match = re.search(r"Backend\s*Bump\s*:\s*\[?([0-9a-zA-Z_\-]+)\]?", unreleased_content, re.IGNORECASE)
+    frontend_match = re.search(r"Frontend\s*Bump\s*:\s*\[?([0-9a-zA-Z_\-]+)\]?", unreleased_content, re.IGNORECASE)
+    legacy_match = re.search(r"^Bump\s*:\s*\[?([0-9a-zA-Z_\-]+)\]?", unreleased_content, re.MULTILINE | re.IGNORECASE)
+
+    backend_bump = parse_bump_val(backend_match.group(1)) if backend_match else None
+    frontend_bump = parse_bump_val(frontend_match.group(1)) if frontend_match else None
+
+    # Fallback to single Bump line if component bumps are omitted
+    if backend_bump is None and frontend_bump is None and legacy_match:
+        legacy_val = parse_bump_val(legacy_match.group(1))
+        backend_bump = legacy_val
+        frontend_bump = legacy_val
+
+    return backend_bump, frontend_bump
 
 
 # ──────────────────────────────────────────────
@@ -170,11 +253,10 @@ def calculate_new_version(current_version, bump_type, branch):
         1 = Major (X.0.0)
         2 = Minor (0.X.0)
         3 = Patch (0.0.X)
-
-    Branch determines the suffix:
-        dev  -> -a (alpha)
-        test -> -b (beta)
     """
+    if bump_type is None:
+        return current_version
+
     parts = parse_base_version(current_version)
 
     if bump_type == 1:
@@ -229,29 +311,41 @@ def get_status_alert(version):
         return "> [!TIP]\n> **Statut : Stable.** Version prête pour la production."
 
 
-def update_package_json(new_version):
-    """Updates version in package.json."""
-    content = read_file(PACKAGE_JSON)
+def update_package_json(target_path, new_version):
+    """Updates version in a target package.json file."""
+    if not os.path.exists(target_path):
+        return
+    content = read_file(target_path)
     data = json.loads(content)
-    
-    # Strip the leading 'v' prefix for package.json (Standard SemVer)
-    version_to_write = new_version
-    if version_to_write.startswith('v'):
-        version_to_write = version_to_write[1:]
-        
+
+    version_to_write = new_version[1:] if new_version.startswith('v') else new_version
     data["version"] = version_to_write
-    write_file(PACKAGE_JSON, json.dumps(data, indent=2) + "\n")
+    write_file(target_path, json.dumps(data, indent=2) + "\n")
+
+
+def update_backend_pom(new_version):
+    """Updates version in backend/pom.xml."""
+    if not os.path.exists(BACKEND_POM):
+        return
+    content = read_file(BACKEND_POM)
+    version_to_write = new_version[1:] if new_version.startswith('v') else new_version
+
+    pattern = r'(<artifactId>remembermap-backend</artifactId>\s*<version>)[^<]+(</version>)'
+    if re.search(pattern, content):
+        new_content = re.sub(pattern, rf'\g<1>{version_to_write}\g<2>', content)
+    else:
+        new_content = re.sub(r'(<version>)[^<]+(</version>)', rf'\g<1>{version_to_write}\g<2>', content, count=1)
+
+    write_file(BACKEND_POM, new_content)
 
 
 def update_changelog(new_version):
     """
     Freezes the [Unreleased] section into a dated version block,
     and inserts a fresh [Unreleased] template.
-    Returns the cleaned release notes for use in the GitHub release.
     """
     content = read_file(CHANGELOG_FILE)
 
-    # Extract Unreleased section content
     unreleased_regex = r"## \[Unreleased\](.*?)(\n---)"
     match = re.search(unreleased_regex, content, re.DOTALL)
     if not match:
@@ -260,19 +354,18 @@ def update_changelog(new_version):
 
     raw_notes = match.group(1).strip()
 
-    # Clean: remove HTML comments, bump directive, description placeholder
+    # Clean: remove HTML comments, bump directives, description placeholders
     clean_notes = re.sub(r"<!--.*?-->", "", raw_notes, flags=re.DOTALL)
-    clean_notes = re.sub(r"bump\s*:\s*\[?(\d|Numéro)\]?", "", clean_notes, flags=re.IGNORECASE)
+    clean_notes = re.sub(r"(Backend|Frontend)?\s*Bump\s*:\s*\[?[0-9a-zA-Z_\-]+\]?", "", clean_notes, flags=re.IGNORECASE)
     clean_notes = re.sub(r"_Description:.*?_", "", clean_notes).strip()
 
-    # Remove empty sections (### Header with nothing below)
-    clean_notes = re.sub(r"###\s+\w[^\n]*\n\s*(?=###|\Z)", "", clean_notes).strip()
+    # Remove empty subheadings/headers with nothing below them
+    clean_notes = re.sub(r"#{3,4}\s+[^\n]+\n\s*(?=#{3,4}|\Z)", "", clean_notes).strip()
 
     today = datetime.date.today().isoformat()
     stage = get_stage_name(new_version)
     status_alert = get_status_alert(new_version)
 
-    # Build new version block
     version_block = f"## [{new_version}] - {today}\n\n"
     version_block += f"# {PROJECT_NAME} - {stage} {new_version}\n\n"
     version_block += f"{status_alert}\n\n"
@@ -280,7 +373,6 @@ def update_changelog(new_version):
         version_block += f"{clean_notes}\n\n"
     version_block += "---"
 
-    # Reconstruct: keep everything after the first ---
     after_unreleased = content[match.end():]
 
     new_changelog = "# Changelog\n\n"
@@ -293,10 +385,7 @@ def update_changelog(new_version):
 
 
 def promote_changelog_version(old_version, new_version):
-    """
-    Sur 'test', on ne consomme pas [Unreleased] (déjà vidé par le bump dev).
-    On relabellise le bloc déjà existant de la version alpha promue.
-    """
+    """Re-labels existing alpha version block on test branch."""
     content = read_file(CHANGELOG_FILE)
     today = datetime.date.today().isoformat()
 
@@ -306,10 +395,8 @@ def promote_changelog_version(old_version, new_version):
 
     new_content, count = re.subn(pattern, replacement, content, count=1)
     if count == 0:
-        print(f"⚠️  Bloc CHANGELOG pour {old_version} introuvable — fallback.")
         return update_changelog(new_version)
 
-    # Met aussi à jour le titre et l'alerte de statut (Alpha -> Beta)
     new_content = new_content.replace(
         f"# {PROJECT_NAME} - {get_stage_name(old_version)} {old_version}",
         f"# {PROJECT_NAME} - {get_stage_name(new_version)} {new_version}"
@@ -322,84 +409,18 @@ def promote_changelog_version(old_version, new_version):
     write_file(CHANGELOG_FILE, new_content)
 
 
-def parse_sections(block_body):
-    """Extrait {nom_section: [lignes]} depuis le corps d'un bloc de version."""
-    sections = {}
-    matches = re.findall(r'### (.+?)\n(.*?)(?=\n### |\Z)', block_body, re.DOTALL)
-    for header, content in matches:
-        header = header.strip()
-        lines = [l.strip() for l in content.strip().split('\n') if l.strip()]
-        if lines:
-            sections.setdefault(header, []).extend(lines)
-    return sections
-
-
-def aggregate_changelog_for_beta(old_version, new_version):
-    """
-    Sur 'test' : agrège tous les blocs Alpha poussés depuis la dernière Beta,
-    fusionne leurs sections (Features/Patches/Bug Fixes/...), et insère
-    un nouveau bloc Beta synthétique en tête. Les blocs Alpha d'origine
-    restent intacts en dessous (historique non détruit).
-    """
-    content = read_file(CHANGELOG_FILE)
-    today = datetime.date.today().isoformat()
-
-    blocks = list(VERSION_BLOCK_PATTERN.finditer(content))
-    if not blocks:
-        print("⚠️  Aucun bloc de version trouvé — fallback.")
-        return promote_changelog_version(old_version, new_version)
-
-    # Collecte les blocs Alpha les plus récents, jusqu'à la dernière Beta rencontrée
-    consumed_blocks = []
-    for b in blocks:
-        if b.group(1).endswith("-b"):
-            break
-        consumed_blocks.append(b)
-
-    if not consumed_blocks:
-        print("⚠️  Pas de nouvelle Alpha à agréger depuis la dernière Beta — fallback.")
-        return promote_changelog_version(old_version, new_version)
-
-    # Fusionne les sections, du plus ancien au plus récent (ordre chronologique)
-    merged_sections = {}
-    for b in reversed(consumed_blocks):
-        for header, lines in parse_sections(b.group(3)).items():
-            merged_sections.setdefault(header, [])
-            for line in lines:
-                if line not in merged_sections[header]:
-                    merged_sections[header].append(line)
-
-    stage = get_stage_name(new_version)
-    status_alert = get_status_alert(new_version)
-
-    body_parts = []
-    for header in SECTION_HEADERS:
-        if merged_sections.get(header):
-            body_parts.append(f"### {header}")
-            body_parts.extend(merged_sections[header])
-            body_parts.append("")
-    notes_body = "\n".join(body_parts).strip()
-
-    version_block = f"## [{new_version}] - {today}\n\n"
-    version_block += f"# {PROJECT_NAME} - {stage} {new_version}\n\n"
-    version_block += f"{status_alert}\n\n"
-    if notes_body:
-        version_block += f"{notes_body}\n\n"
-    version_block += "---"
-
-    insert_at = consumed_blocks[0].start()
-    new_content = content[:insert_at] + version_block + "\n\n" + content[insert_at:]
-    write_file(CHANGELOG_FILE, new_content)
-    return notes_body
-
-
 # ──────────────────────────────────────────────
 # Git operations
 # ──────────────────────────────────────────────
 
 def git_commit_and_tag(new_version):
     """Stages changed files, commits with [bump_version], creates an annotated tag."""
-    run_command(f"git add {PACKAGE_JSON} {CHANGELOG_FILE}")
+    files_to_stage = []
+    for f in [PACKAGE_JSON, FRONTEND_PACKAGE_JSON, BACKEND_POM, CHANGELOG_FILE]:
+        if os.path.exists(f):
+            files_to_stage.append(f)
+
+    run_command(f"git add {' '.join(files_to_stage)}")
     run_command(f'git commit -m "chore(release): {new_version} [bump_version]"')
     run_command(f'git tag -a {new_version} -m "Release {new_version}"')
 
@@ -411,7 +432,7 @@ def git_push(branch, tag):
 
 
 def back_merge_to_dev():
-    """Back-merges the current test branch into dev to avoid conflicts."""
+    """Back-merges test branch into dev."""
     print("🔄 Back-merge test → dev...")
     run_command("git checkout dev")
     run_command('git merge test -m "chore: back-merge test into dev [bump_version]"')
@@ -443,33 +464,47 @@ def main():
             sys.exit(1)
     print(f"📌 Branche: {branch}")
 
-    # 2. Read current version
-    current_version = get_current_version()
-    print(f"📦 Version actuelle: {current_version}")
+    # 2. Read current versions
+    current_root_version = get_root_version()
+    current_frontend_version = get_frontend_version()
+    current_backend_version = get_backend_version()
 
-    # 3. Determine new version
+    print(f"📦 Version actuelle racine:   {current_root_version}")
+    print(f"   - Frontend:               {current_frontend_version}")
+    print(f"   - Backend:                {current_backend_version}")
+
+    # 3. Determine new versions
     if branch == "test":
-        # On test: promote alpha → beta (no version number bump)
-        new_version = promote_version_to_beta(current_version)
+        new_root_version = promote_version_to_beta(current_root_version)
+        new_frontend_version = promote_version_to_beta(current_frontend_version)
+        new_backend_version = promote_version_to_beta(current_backend_version)
         print(f"🔄 Promotion Alpha → Beta")
     else:
-        # On dev: read bump type from CHANGELOG
-        bump_type = get_bump_type_from_changelog()
-        if not bump_type:
-            print("❌ 'Bump: [Numéro]' valide non trouvé dans la section [Unreleased] du CHANGELOG.md")
-            print("   Assurez-vous d'avoir 'Bump: 2' (par exemple) dans la section [Unreleased].")
-            sys.exit(1)
+        be_bump, fe_bump = get_bump_types_from_changelog()
 
-        if bump_type not in (1, 2, 3):
-            print(f"❌ Type de bump invalide: {bump_type}. Doit être 1, 2 ou 3.")
+        if be_bump is None and fe_bump is None:
+            print("❌ Au moins un bump (Backend Bump ou Frontend Bump) doit être spécifié dans CHANGELOG.md [Unreleased].")
+            print("   Exemple:")
+            print("   Backend Bump: 3")
+            print("   Frontend Bump: none")
             sys.exit(1)
 
         bump_labels = {1: "Major", 2: "Minor", 3: "Patch"}
-        print(f"📋 Type de bump: {bump_type} ({bump_labels[bump_type]})")
+        be_str = f"{be_bump} ({bump_labels[be_bump]})" if be_bump else "None"
+        fe_str = f"{fe_bump} ({bump_labels[fe_bump]})" if fe_bump else "None"
+        print(f"📋 Bumps demandés -> Backend: {be_str} | Frontend: {fe_str}")
 
-        new_version = calculate_new_version(current_version, bump_type, branch)
+        valid_bumps = [b for b in (be_bump, fe_bump) if b is not None]
+        root_bump = min(valid_bumps)  # 1 (Major) > 2 (Minor) > 3 (Patch)
 
-    print(f"🆕 Nouvelle version: {new_version}")
+        new_backend_version = calculate_new_version(current_backend_version, be_bump, branch)
+        new_frontend_version = calculate_new_version(current_frontend_version, fe_bump, branch)
+        new_root_version = calculate_new_version(current_root_version, root_bump, branch)
+
+    print(f"🆕 Nouvelles versions calculées:")
+    print(f"   - Racine (Master):        {new_root_version}")
+    print(f"   - Frontend:               {new_frontend_version}")
+    print(f"   - Backend:                {new_backend_version}")
 
     # 4. Dry-run check
     if args.dry_run:
@@ -478,29 +513,38 @@ def main():
 
     # 5. Confirm (interactive mode only)
     if not args.ci:
-        confirm = input(f"\n Appliquer {current_version} → {new_version} ? (y/N): ").strip().lower()
+        confirm = input(f"\n Appliquer les nouvelles versions ? (y/N): ").strip().lower()
         if confirm != "y":
             print("❌ Annulé par l'utilisateur.")
             sys.exit(0)
 
     # 6. Update files
     print("\n📝 Mise à jour des fichiers...")
-    update_package_json(new_version)
-    print(f"   ✅ {PACKAGE_JSON}")
+    update_package_json(PACKAGE_JSON, new_root_version)
+    print(f"   ✅ {PACKAGE_JSON} -> {new_root_version}")
+
+    if new_frontend_version != current_frontend_version or branch == "test":
+        update_package_json(FRONTEND_PACKAGE_JSON, new_frontend_version)
+        print(f"   ✅ {FRONTEND_PACKAGE_JSON} -> {new_frontend_version}")
+
+    if new_backend_version != current_backend_version or branch == "test":
+        update_backend_pom(new_backend_version)
+        print(f"   ✅ {BACKEND_POM} -> {new_backend_version}")
+
     if branch == "test":
-        aggregate_changelog_for_beta(current_version, new_version)
+        promote_changelog_version(current_root_version, new_root_version)
     else:
-        update_changelog(new_version)
+        update_changelog(new_root_version)
     print(f"   ✅ {CHANGELOG_FILE}")
 
     # 7. Git commit & tag
     print("\n🏷️  Commit et tag...")
-    git_commit_and_tag(new_version)
-    print(f"   ✅ Tag {new_version} créé")
+    git_commit_and_tag(new_root_version)
+    print(f"   ✅ Tag {new_root_version} créé")
 
     # 8. Push
     print("\n📤 Push vers origin...")
-    git_push(branch, new_version)
+    git_push(branch, new_root_version)
     print(f"   ✅ Poussé sur {branch}")
 
     # 9. Back-merge if on test
@@ -508,7 +552,7 @@ def main():
         back_merge_to_dev()
         print("   ✅ Back-merge test → dev terminé")
 
-    print(f"\n✅ Opération terminée : {new_version}")
+    print(f"\n✅ Opération terminée : {new_root_version}")
 
 
 if __name__ == "__main__":

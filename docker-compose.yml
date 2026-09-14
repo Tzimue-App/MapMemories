@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # ─── Database (PostgreSQL + PostGIS) ────────────────────────
+  postgres:
+    image: postgis/postgis:17-3.6-alpine
+    container_name: remembermap-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: remembermap
+      POSTGRES_USER: remembermap
+      POSTGRES_PASSWORD: remembermap
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remembermap -d remembermap"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Object Storage (MinIO) ─────────────────────────────────
+  minio:
+    image: minio/minio:RELEASE.2024-01-18T22-51-28Z
+    container_name: remembermap-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: remembermap_access
+      MINIO_ROOT_PASSWORD: remembermap_secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "/usr/bin/mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Helper container to auto-create the MinIO photo bucket on start
+  minio-create-bucket:
+    image: minio/mc:RELEASE.2024-01-16T16-06-34Z
+    container_name: remembermap-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 remembermap_access remembermap_secret;
+      /usr/bin/mc mb --ignore-existing myminio/remembermap-photos;
+      /usr/bin/mc anonymous set download myminio/remembermap-photos;
+      exit 0;
+      "
+
+  # ─── Backend API (Java 25 Spring Boot) ─────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: remembermap-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/remembermap
+      SPRING_DATASOURCE_USERNAME: remembermap
+      SPRING_DATASOURCE_PASSWORD: remembermap
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: remembermap_access
+      MINIO_SECRET_KEY: remembermap_secret
+      MINIO_BUCKET: remembermap-photos
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # ─── Frontend Application (React + TypeScript + Vite) ──────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: remembermap-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  minio_data:
