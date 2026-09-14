@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Complete Phase 0 setup — reproducible Java 25 Spring Boot backend, React 19 + TypeScript + Tailwind CSS frontend, Docker Compose infrastructure with PostGIS and MinIO, and GitHub Actions CI/CD workflows._
+_Description: Écrire le résumé ici..._
 
 <!--
 BUMP_TYPE :
@@ -11,10 +11,38 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: 2
-Frontend Bump: 2
+Backend Bump: none
+Frontend Bump: none
 
 ### Backend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Frontend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Deployment & Configuration
+
+### ChangeLog
+
+---
+
+## [v0.1.0-a] - 2026-09-14
+
+# RememberMap - Alpha v0.1.0-a
+
+> [!WARNING]
+> **Statut : Alpha.** Version de développement destinée aux tests d'intégration internes.
+
 #### Features
 - Initialize Java 25 Spring Boot application with Maven build setup
 - Configure Spring Web, Spring Data JPA, Spring Security, Hibernate Spatial, and MinIO Java SDK dependencies
@@ -23,21 +51,16 @@ Frontend Bump: 2
 - Add Spring Boot context load sanity test suite (`RememberMapApplicationTests`) with H2 test database profile
 - Create multi-stage Java 25 `Dockerfile` (`eclipse-temurin:25-jdk` builder and `eclipse-temurin:25-jre` runner)
 
-#### Patches
-
 #### Bug Fixes
 - Configure `mainClass` and `MAVEN_OPTS` for Java 25 Spring Boot 3.4 repackaging compatibility
 
 
-### Frontend
 #### Features
 - Initialize React 19 + TypeScript + Vite 6 application framework
 - Integrate Tailwind CSS (v4) with `@tailwindcss/vite` plugin and `@import "tailwindcss";` in `src/index.css`
 - Set up Vitest test framework and component rendering test suite (`App.test.tsx`)
 - Generate `package-lock.json` for deterministic `npm ci` builds
 - Create multi-stage frontend `Dockerfile` (Node 22 builder and Nginx Alpine runner)
-
-#### Patches
 
 #### Bug Fixes
 - Fix package-lock.json for CI
