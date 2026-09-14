@@ -40,7 +40,7 @@ Frontend Bump: 2
 #### Patches
 
 #### Bug Fixes
-
+- Fix package-lock.json for CI
 
 ### Deployment & Configuration
 - Configure local multi-container orchestration in `docker-compose.yml` (`postgres`, `minio`, `minio-init`, `backend`, `frontend`)
