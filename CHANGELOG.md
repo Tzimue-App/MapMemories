@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Écrire le résumé ici..._
+_Description: Phase 1 Interactive Map Display — Leaflet map integration, OpenStreetMap tile rendering, Nominatim geocoding address search bar, animated map navigation, and TDD Vitest test suite._
 
 <!--
 BUMP_TYPE :
@@ -12,7 +12,7 @@ BUMP_TYPE :
 none = Pas de bump
 -->
 Backend Bump: none
-Frontend Bump: none
+Frontend Bump: 2
 
 ### Backend
 #### Features
@@ -24,6 +24,12 @@ Frontend Bump: none
 
 ### Frontend
 #### Features
+- Integrate Leaflet (`leaflet`, `react-leaflet`) for interactive map rendering
+- Configure OpenStreetMap tile layer with required attribution (`© OpenStreetMap contributors`)
+- Build `AddressSearch` component featuring debounced place search, async loading spinner, suggestion dropdown, and Tailwind CSS v4 styling
+- Create `nominatimService` HTTP client querying OpenStreetMap Nominatim geocoding API (`https://nominatim.openstreetmap.org/search`)
+- Implement `MapController` helper component providing smooth animated `flyTo` transitions when a location is selected
+- Build comprehensive Vitest TDD unit test suite covering `MapView`, `AddressSearch`, `nominatimService`, and `App` components (100% passing tests)
 
 #### Patches
 
