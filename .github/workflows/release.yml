@@ -31,14 +31,68 @@ jobs:
           import re, sys
           content = open('CHANGELOG.md', 'r', encoding='utf-8').read()
           tag = '${TAG}'
-          # Escape tag for regex
           escaped = re.escape(tag)
           pattern = rf'## \[{escaped}\].*?\n(.*?)(?=\n## |\Z)'
           match = re.search(pattern, content, re.DOTALL)
           if match:
               notes = match.group(1).strip()
-              # Remove the redundant title line (# RememberMap - ...)
               notes = re.sub(r'^# .*$', '', notes, flags=re.MULTILINE).strip()
+              notes = re.sub(r'<!--.*?-->', '', notes, flags=re.DOTALL)
+              notes = re.sub(r'(Backend|Frontend)?\s*Bump\s*:\s*\[?[0-9a-zA-Z_\-]+\]?', '', notes, flags=re.IGNORECASE)
+              notes = re.sub(r'_Description:.*?_', '', notes)
+              notes = re.sub(r'### ChangeLog\s*$', '', notes, flags=re.MULTILINE)
+              notes = re.sub(r'\n---\s*$', '', notes).strip()
+
+              def clean_empty_headers(text):
+                  lines = text.split('\n')
+                  # 1. Remove empty H4 (####) headers
+                  result = []
+                  i = 0
+                  while i < len(lines):
+                      line = lines[i]
+                      if line.strip().startswith('####'):
+                          has_content = False
+                          j = i + 1
+                          while j < len(lines):
+                              nl = lines[j].strip()
+                              if nl.startswith('#'):
+                                  break
+                              if nl and not nl.startswith('<!--'):
+                                  has_content = True
+                                  break
+                              j += 1
+                          if not has_content:
+                              i += 1
+                              continue
+                      result.append(line)
+                      i += 1
+
+                  # 2. Remove empty H3 (###) headers
+                  lines = result
+                  result = []
+                  i = 0
+                  while i < len(lines):
+                      line = lines[i]
+                      if line.strip().startswith('### '):
+                          has_content = False
+                          j = i + 1
+                          while j < len(lines):
+                              nl = lines[j].strip()
+                              if (nl.startswith('### ') or nl.startswith('## ') or nl.startswith('# ')) and not nl.startswith('#### '):
+                                  break
+                              if nl and not nl.startswith('<!--'):
+                                  has_content = True
+                                  break
+                              j += 1
+                          if not has_content:
+                              i += 1
+                              continue
+                      result.append(line)
+                      i += 1
+                  return '\n'.join(result)
+
+              notes = clean_empty_headers(notes)
+              notes = re.sub(r'\n{3,}', '\n\n', notes).strip()
               print(notes)
           else:
               print(f'Release {tag}')
