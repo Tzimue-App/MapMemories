@@ -359,8 +359,54 @@ def update_changelog(new_version):
     clean_notes = re.sub(r"(Backend|Frontend)?\s*Bump\s*:\s*\[?[0-9a-zA-Z_\-]+\]?", "", clean_notes, flags=re.IGNORECASE)
     clean_notes = re.sub(r"_Description:.*?_", "", clean_notes).strip()
 
-    # Remove empty subheadings/headers with nothing below them
-    clean_notes = re.sub(r"#{3,4}\s+[^\n]+\n\s*(?=#{3,4}|\Z)", "", clean_notes).strip()
+    def clean_empty_headers(text):
+        lines = text.split('\n')
+        result = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if line.strip().startswith('####'):
+                has_content = False
+                j = i + 1
+                while j < len(lines):
+                    nl = lines[j].strip()
+                    if nl.startswith('#'):
+                        break
+                    if nl and not nl.startswith('<!--'):
+                        has_content = True
+                        break
+                    j += 1
+                if not has_content:
+                    i += 1
+                    continue
+            result.append(line)
+            i += 1
+
+        lines = result
+        result = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if line.strip().startswith('### '):
+                has_content = False
+                j = i + 1
+                while j < len(lines):
+                    nl = lines[j].strip()
+                    if (nl.startswith('### ') or nl.startswith('## ') or nl.startswith('# ')) and not nl.startswith('#### '):
+                        break
+                    if nl and not nl.startswith('<!--'):
+                        has_content = True
+                        break
+                    j += 1
+                if not has_content:
+                    i += 1
+                    continue
+            result.append(line)
+            i += 1
+        return '\n'.join(result)
+
+    clean_notes = clean_empty_headers(clean_notes)
+    clean_notes = re.sub(r'\n{3,}', '\n\n', clean_notes).strip()
 
     today = datetime.date.today().isoformat()
     stage = get_stage_name(new_version)
