@@ -1,6 +1,6 @@
 {
   "name": "remembermap",
-  "version": "0.2.0-a",
+  "version": "0.3.0-a",
   "private": true,
   "description": "Collaborative interactive mapping application",
   "test": "test",

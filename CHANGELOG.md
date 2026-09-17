@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Phase 2 - Drop Pins and Draw Radii (Interactive Map Interactivity)_
+_Description: Écrire le résumé ici..._
 
 <!--
 BUMP_TYPE :
@@ -12,7 +12,7 @@ BUMP_TYPE :
 none = Pas de bump
 -->
 Backend Bump: none
-Frontend Bump: 2
+Frontend Bump: none
 
 ### Backend
 #### Features
@@ -24,6 +24,27 @@ Frontend Bump: 2
 
 ### Frontend
 #### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Deployment & Configuration
+
+### ChangeLog
+
+---
+
+## [v0.3.0-a] - 2026-09-17
+
+# RememberMap - Alpha v0.3.0-a
+
+> [!WARNING]
+> **Statut : Alpha.** Version de développement destinée aux tests d'intégration internes.
+
+### Frontend
+#### Features
 - Implement interactive map click listener to place temporary point markers (Pins)
 - Develop `PinConfigPanel` component embedded in Leaflet popups for adjusting radius (50m to 20km) and selecting marker/circle color
 - Support disabling circle radius (`0m (Off)`) while preserving the pin marker on the map
@@ -31,15 +52,11 @@ Frontend Bump: 2
 - Create TypeScript types (`PinItem`) and preset constants in `frontend/src/types/pin.ts`
 - Write Vitest unit and component test suites (`PinConfigPanel.test.tsx`, `MapView.test.tsx`) covering pin creation, radius adjustments, color selection, drag events, and disabled radius rendering
 
-#### Patches
-
 #### Bug Fixes
 - Fix click event propagation on `PinConfigPanel` and "Delete Pin" button (`stopPropagation` and `stopImmediatePropagation`) to prevent map click handler from dropping a new pin when deleting an existing pin
 
-
 ### Deployment & Configuration
 - Release.yml add correctly backend and frontend category in the github release
-### ChangeLog
 
 ---
 
