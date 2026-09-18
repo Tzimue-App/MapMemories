@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MapView } from './MapView';
 import { PinItem } from '../../types/pin';
+import { SavedBoundaryItem } from '../../types/boundary';
 
 describe('MapView Component', () => {
   it('renders Leaflet map container element', () => {
@@ -30,16 +31,36 @@ describe('MapView Component', () => {
 
     const { container } = render(<MapView center={[48.8566, 2.3522]} zoom={13} initialPins={mockPins} />);
 
-    // Marker container or leaflet-marker-icon should be present
     const markerElement = container.querySelector('.leaflet-marker-icon');
     expect(markerElement).toBeInTheDocument();
 
-    // Circle SVG element should be present
     const circleElement = container.querySelector('path.leaflet-interactive');
     expect(circleElement).toBeInTheDocument();
   });
 
-  it('does not render circle element when radius is set to 0 or disabled, but leaves pin marker visible', () => {
+  it('renders saved administrative boundaries', () => {
+    const savedBoundaries: SavedBoundaryItem[] = [
+      {
+        id: 'b-1',
+        osmId: 100,
+        name: 'Belgium',
+        displayName: 'Kingdom of Belgium',
+        boundaryType: 'administrative',
+        adminLevel: 2,
+        geojson: '{"type":"Polygon","coordinates":[[[4.0,50.0],[5.0,50.0],[5.0,51.0],[4.0,51.0],[4.0,50.0]]]}',
+        color: '#10b981',
+      },
+    ];
+
+    const { container } = render(
+      <MapView center={[48.8566, 2.3522]} zoom={13} savedBoundaries={savedBoundaries} />
+    );
+
+    const boundarySvg = container.querySelector('path.leaflet-interactive');
+    expect(boundarySvg).toBeInTheDocument();
+  });
+
+  it('does not render circle element when radius is set to 0 or disabled', () => {
     const disabledRadiusPins: PinItem[] = [
       {
         id: 'pin-disabled',
@@ -55,11 +76,9 @@ describe('MapView Component', () => {
       <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={disabledRadiusPins} />
     );
 
-    // Marker must still be rendered
     const markerElement = container.querySelector('.leaflet-marker-icon');
     expect(markerElement).toBeInTheDocument();
 
-    // Circle SVG element must NOT be rendered
     const circleElement = container.querySelector('path.leaflet-interactive');
     expect(circleElement).not.toBeInTheDocument();
   });

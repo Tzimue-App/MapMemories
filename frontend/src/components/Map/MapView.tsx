@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, Popup, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { PinItem, DEFAULT_PIN_RADIUS, DEFAULT_PIN_COLOR } from '../../types/pin';
+import { BoundaryItem, SavedBoundaryItem, DEFAULT_BOUNDARY_COLOR } from '../../types/boundary';
 import { PinConfigPanel } from './PinConfigPanel';
+import { BoundaryConfigPanel } from './BoundaryConfigPanel';
 
 interface MapViewProps {
   center?: [number, number];
   zoom?: number;
   initialPins?: PinItem[];
   onPinsChange?: (pins: PinItem[]) => void;
+  activeBoundary?: BoundaryItem | null;
+  savedBoundaries?: SavedBoundaryItem[];
+  onUpdateBoundaryColor?: (id: string, color: string) => void;
+  onDeleteBoundary?: (id: string) => void;
 }
 
 const DEFAULT_CENTER: [number, number] = [48.8566, 2.3522]; // Paris default
@@ -23,6 +29,100 @@ const MapController: React.FC<{ center: [number, number]; zoom: number }> = ({ c
   }, [center, zoom, map]);
 
   return null;
+};
+
+const BoundaryLayer: React.FC<{ boundary: BoundaryItem }> = ({ boundary }) => {
+  const map = useMap();
+
+  let geoJsonData = null;
+  try {
+    geoJsonData = typeof boundary.geojson === 'string' ? JSON.parse(boundary.geojson) : boundary.geojson;
+  } catch (e) {
+    console.error('Failed to parse boundary GeoJSON', e);
+  }
+
+  useEffect(() => {
+    if (geoJsonData && map) {
+      try {
+        const layer = L.geoJSON(geoJsonData);
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [20, 20], maxZoom: 14 });
+        }
+      } catch (e) {
+        console.error('Error fitting boundary bounds', e);
+      }
+    }
+  }, [geoJsonData, map]);
+
+  if (!geoJsonData) return null;
+
+  return (
+    <GeoJSON
+      key={boundary.osmId}
+      data={geoJsonData}
+      style={{
+        color: DEFAULT_BOUNDARY_COLOR,
+        weight: 3,
+        fillColor: DEFAULT_BOUNDARY_COLOR,
+        fillOpacity: 0.25,
+      }}
+    />
+  );
+};
+
+const SavedBoundaryLayer: React.FC<{
+  boundary: SavedBoundaryItem;
+  onUpdateColor?: (id: string, color: string) => void;
+  onDelete?: (id: string) => void;
+}> = ({ boundary, onUpdateColor, onDelete }) => {
+  const map = useMap();
+
+  let geoJsonData = null;
+  try {
+    geoJsonData = typeof boundary.geojson === 'string' ? JSON.parse(boundary.geojson) : boundary.geojson;
+  } catch (e) {
+    console.error('Failed to parse boundary GeoJSON', e);
+  }
+
+  useEffect(() => {
+    if (geoJsonData && map) {
+      try {
+        const layer = L.geoJSON(geoJsonData);
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [20, 20], maxZoom: 14 });
+        }
+      } catch (e) {
+        console.error('Error fitting boundary bounds', e);
+      }
+    }
+  }, [geoJsonData, map]);
+
+  if (!geoJsonData || boundary.visible === false) return null;
+
+  const currentColor = boundary.color || DEFAULT_BOUNDARY_COLOR;
+
+  return (
+    <GeoJSON
+      key={`${boundary.id}-${currentColor}`}
+      data={geoJsonData}
+      style={{
+        color: currentColor,
+        weight: 3,
+        fillColor: currentColor,
+        fillOpacity: 0.25,
+      }}
+    >
+      <Popup className="boundary-config-popup">
+        <BoundaryConfigPanel
+          boundary={boundary}
+          onColorChange={(newColor) => onUpdateColor && onUpdateColor(boundary.id, newColor)}
+          onDelete={() => onDelete && onDelete(boundary.id)}
+        />
+      </Popup>
+    </GeoJSON>
+  );
 };
 
 const MapClickHandler: React.FC<{ onMapClick: (lat: number, lng: number) => void }> = ({ onMapClick }) => {
@@ -49,6 +149,10 @@ export const MapView: React.FC<MapViewProps> = ({
   zoom = DEFAULT_ZOOM,
   initialPins = [],
   onPinsChange,
+  activeBoundary,
+  savedBoundaries = [],
+  onUpdateBoundaryColor,
+  onDeleteBoundary,
 }) => {
   const [pins, setPins] = useState<PinItem[]>(initialPins);
 
@@ -114,6 +218,17 @@ export const MapView: React.FC<MapViewProps> = ({
         />
         <MapController center={center} zoom={zoom} />
         <MapClickHandler onMapClick={handleMapClick} />
+
+        {activeBoundary && <BoundaryLayer boundary={activeBoundary} />}
+
+        {savedBoundaries.map((b) => (
+          <SavedBoundaryLayer
+            key={b.id}
+            boundary={b}
+            onUpdateColor={onUpdateBoundaryColor}
+            onDelete={onDeleteBoundary}
+          />
+        ))}
 
         {pins.map((pin) => {
           const showCircle = pin.radiusMeters > 0 && !pin.radiusDisabled;
