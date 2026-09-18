@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Phase 3 — Boundaries: backend OSM boundary search & caching service with GeoJSON support, and frontend boundary search / display components with interactive configuration panel._
+_Description: Écrire le résumé ici..._
 
 <!--
 BUMP_TYPE :
@@ -11,8 +11,39 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: 2
-Frontend Bump: 2
+Backend Bump: none
+Frontend Bump: none
+
+### Backend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Frontend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Deployment & Configuration
+
+### ChangeLog
+
+---
+
+## [v0.4.0-a] - 2026-09-18
+
+# RememberMap - Alpha v0.4.0-a
+
+> [!WARNING]
+> **Statut : Alpha.** Version de développement destinée aux tests d'intégration internes.
+
+_Phase 3 — Boundaries: backend OSM boundary search & caching service with GeoJSON support, and frontend boundary search / display components with interactive configuration panel._
 
 ### Backend
 #### Features
@@ -21,11 +52,6 @@ Frontend Bump: 2
 - Build `BoundaryCache` JPA entity with Hibernate Spatial `Geometry` column (SRID 4326), unique `osmId` constraint, and `TEXT`-typed `geoJson` field for persisting boundary polygons
 - Implement `BoundaryCacheRepository` with Spring Data JPA providing `findByNameContainingIgnoreCase` and `findByOsmId` query methods
 - Convert OSM node/way/relation data into GeoJSON `Polygon` and `MultiPolygon` representations stored alongside JTS geometries
-
-#### Patches
-
-#### Bug Fixes
-
 
 ### Frontend
 #### Features
@@ -39,13 +65,6 @@ Frontend Bump: 2
 
 #### Patches
 - Add Vite dev-server proxy rule (`/api` → `http://localhost:8080`) in `vite.config.ts` for seamless backend API integration during development
-
-#### Bug Fixes
-
-
-### Deployment & Configuration
-
-### ChangeLog
 
 ---
 

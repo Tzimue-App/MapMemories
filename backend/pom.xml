@@ -13,7 +13,7 @@
     
     <groupId>com.remembermap</groupId>
     <artifactId>remembermap-backend</artifactId>
-    <version>0.1.0-a</version>
+    <version>0.2.0-a</version>
     <name>remembermap-backend</name>
     <description>RememberMap Java 25 Spring Boot Backend</description>
     
