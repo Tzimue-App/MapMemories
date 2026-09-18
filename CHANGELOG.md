@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Écrire le résumé ici..._
+_Phase 3 — Boundaries: backend OSM boundary search & caching service with GeoJSON support, and frontend boundary search / display components with interactive configuration panel._
 
 <!--
 BUMP_TYPE :
@@ -11,11 +11,16 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: none
-Frontend Bump: none
+Backend Bump: 2
+Frontend Bump: 2
 
 ### Backend
 #### Features
+- Implement REST boundary search endpoint (`GET /api/boundaries/search?q=`) returning cached or live OSM boundary results as `BoundaryDTO` (id, osmId, name, displayName, adminLevel, boundaryType, geoJson)
+- Create `OsmBoundaryService` querying the Overpass API for administrative boundaries by name, parsing OSM XML responses and extracting polygon geometries
+- Build `BoundaryCache` JPA entity with Hibernate Spatial `Geometry` column (SRID 4326), unique `osmId` constraint, and `TEXT`-typed `geoJson` field for persisting boundary polygons
+- Implement `BoundaryCacheRepository` with Spring Data JPA providing `findByNameContainingIgnoreCase` and `findByOsmId` query methods
+- Convert OSM node/way/relation data into GeoJSON `Polygon` and `MultiPolygon` representations stored alongside JTS geometries
 
 #### Patches
 
@@ -24,8 +29,16 @@ Frontend Bump: none
 
 ### Frontend
 #### Features
+- Create `BoundarySearch` component with debounced text input querying the backend boundary search API, async loading spinner, and clickable suggestion dropdown
+- Implement `boundaryService` HTTP client (`fetchBoundaries`) calling `GET /api/boundaries/search` and returning typed `BoundaryResult[]` objects
+- Develop `BoundaryConfigPanel` component for toggling boundary GeoJSON polygon visibility, adjusting stroke color, fill color, and fill opacity via interactive controls
+- Render selected boundary GeoJSON polygons on the Leaflet map as `GeoJSON` layers with configurable style (stroke color, fill color, fill opacity)
+- Define TypeScript types (`BoundaryResult`, `BoundaryItem`, `BoundaryStyle`) in `frontend/src/types/boundary.ts`
+- Integrate boundary selection into `App.tsx` state management, lifting boundary items and active boundary list to the application root
+- Write Vitest unit and component test suites (`BoundarySearch.test.tsx`, `BoundaryConfigPanel.test.tsx`, `MapView.test.tsx`, `boundaryService.test.ts`) covering boundary search, config panel interactions, GeoJSON rendering, and service HTTP calls
 
 #### Patches
+- Add Vite dev-server proxy rule (`/api` → `http://localhost:8080`) in `vite.config.ts` for seamless backend API integration during development
 
 #### Bug Fixes
 
