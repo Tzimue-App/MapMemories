@@ -157,9 +157,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const [pins, setPins] = useState<PinItem[]>(initialPins);
 
   useEffect(() => {
-    if (initialPins && initialPins.length > 0) {
-      setPins(initialPins);
-    }
+    setPins(initialPins || []);
   }, [initialPins]);
 
   const updatePins = (newPins: PinItem[]) => {

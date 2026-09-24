@@ -29,6 +29,12 @@ class BoundaryControllerTest {
     @MockBean
     private OsmBoundaryService osmBoundaryService;
 
+    @MockBean
+    private com.remembermap.service.JwtService jwtService;
+
+    @MockBean
+    private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+
     @Test
     void testSearchBoundariesEndpoint() throws Exception {
         BoundaryDTO dto = new BoundaryDTO(
