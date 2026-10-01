@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.remembermap.api.dto.LoginRequest;
 import com.remembermap.api.dto.RegisterRequest;
 import com.remembermap.model.User;
+import com.remembermap.repository.ModificationRepository;
 import com.remembermap.repository.UserRepository;
 import com.remembermap.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,9 @@ class AuthControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private ModificationRepository modificationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -42,6 +46,7 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
+        modificationRepository.deleteAll();
         userRepository.deleteAll();
     }
 
