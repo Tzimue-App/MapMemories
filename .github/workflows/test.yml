@@ -19,6 +19,8 @@ jobs:
   backend-tests:
     name: "Backend Tests (Java 25)"
     runs-on: ubuntu-latest
+    env:
+          NODE_OPTIONS: --max-old-space-size=4096
     defaults:
       run:
         working-directory: ./backend
