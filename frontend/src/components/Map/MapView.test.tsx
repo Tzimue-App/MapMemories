@@ -38,6 +38,25 @@ describe('MapView Component', () => {
     expect(circleElement).toBeInTheDocument();
   });
 
+  it('updates markers when initialPins is updated to empty array', () => {
+    const mockPins: PinItem[] = [
+      {
+        id: 'pin-1',
+        lat: 48.8566,
+        lng: 2.3522,
+        radiusMeters: 1000,
+        color: '#3B82F6',
+      },
+    ];
+
+    const { container, rerender } = render(<MapView center={[48.8566, 2.3522]} zoom={13} initialPins={mockPins} />);
+    expect(container.querySelector('.leaflet-marker-icon')).toBeInTheDocument();
+
+    // Rerender with empty initialPins (simulating user logout or switching to user with 0 pins)
+    rerender(<MapView center={[48.8566, 2.3522]} zoom={13} initialPins={[]} />);
+    expect(container.querySelector('.leaflet-marker-icon')).not.toBeInTheDocument();
+  });
+
   it('renders saved administrative boundaries', () => {
     const savedBoundaries: SavedBoundaryItem[] = [
       {

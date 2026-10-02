@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Écrire le résumé ici..._
+_Phase 4 — Authentication & Database Persistence: Spring Security JWT authentication framework, BCrypt password encoding, User & Modification JPA persistence entities, secured REST endpoints, React AuthContext, AuthModal, and user-isolated map modifications persistence._
 
 <!--
 BUMP_TYPE :
@@ -11,11 +11,19 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: none
-Frontend Bump: none
+Backend Bump: 2
+Frontend Bump: 2
 
 ### Backend
 #### Features
+- Implement Spring Security JWT authentication with stateless `SecurityConfig`, `JwtAuthenticationFilter`, and `JwtService` for token generation, validation, and claim parsing.
+- Implement BCrypt password hashing (`BCryptPasswordEncoder`) and custom `CustomUserDetailsService` for authentication handling.
+- Create `User` JPA entity with unique username/email constraints and `UserRepository` with query methods (`findByUsername`, `existsByUsername`, `existsByEmail`).
+- Create `Modification` JPA entity with `ModificationType` enum (`PIN`, `RADIUS`, `BOUNDARY`) linked via `@ManyToOne` to `User`.
+- Create `ModificationRepository` supporting user-isolated query operations (`findByUserOrderByCreatedAtDesc`, `findByIdAndUser`).
+- Expose REST authentication endpoints in `AuthController`: `POST /api/auth/register`, `POST /api/auth/login`, and `GET /api/auth/me`.
+- Expose secured REST modification endpoints in `ModificationController`: `POST /api/modifications` (save modification), `GET /api/modifications` (retrieve user history), and `DELETE /api/modifications/{id}` (delete modification).
+- Add backend test configuration (`src/test/resources/application.yml`) and full TDD test suite (`UserRepositoryTest`, `ModificationRepositoryTest`, `JwtServiceTest`, `AuthControllerTest`, `ModificationControllerTest`).
 
 #### Patches
 
@@ -24,13 +32,24 @@ Frontend Bump: none
 
 ### Frontend
 #### Features
+- Create `authService` for handling JWT login, registration, local storage persistence, and authenticated `getMe` requests.
+- Create `AuthContext` provider and `useAuth` hook managing global user authentication state, token storage, and session lifecycle.
+- Build interactive `AuthModal` component supporting tabbed Sign In / Sign Up forms, input validation, and user feedback.
+- Create `modificationService` for saving, fetching, and deleting user pins, radius circles, and boundaries via authenticated Bearer token API requests.
+- Integrate authentication flow into `App.tsx`: auto-prompt login modal on initial load when unauthenticated, display authentication status banner, and synchronize user-saved modifications with Leaflet map markers and polygons.
+- Implement strict user state isolation in `App.tsx` and `MapView.tsx`, resetting active map markers and boundaries immediately upon logout or user switch.
+- Write Vitest unit and integration test suites (`authService.test.ts`, `modificationService.test.ts`, `AuthContext.test.tsx`, `AuthModal.test.tsx`, `App.test.tsx`, `MapView.test.tsx`) covering authentication flows, token handling, modal interactions, user state resets, and API request handling.
 
 #### Patches
 
 #### Bug Fixes
+- Fix input text visibility in `AuthModal.tsx` by adding explicit Tailwind text and background color classes (`text-gray-900 dark:text-white bg-white dark:bg-gray-700`).
+- Fix `MapView.tsx` pin state sync bug by ensuring `initialPins` updates properly propagate when reset to an empty array.
 
 
 ### Deployment & Configuration
+- Create custom `frontend/nginx.conf` proxying all `/api/` requests to `http://backend:8080/api/` in Docker containers.
+- Update `frontend/Dockerfile` to copy `nginx.conf` into `/etc/nginx/conf.d/default.conf`.
 
 ### ChangeLog
 
