@@ -19,8 +19,6 @@ jobs:
   backend-tests:
     name: "Backend Tests (Java 25)"
     runs-on: ubuntu-latest
-    env:
-      NODE_OPTIONS: --max-old-space-size=8192
     defaults:
       run:
         working-directory: ./backend
@@ -43,6 +41,8 @@ jobs:
   frontend-tests:
     name: "Frontend Tests (Vitest)"
     runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
     defaults:
       run:
         working-directory: ./frontend

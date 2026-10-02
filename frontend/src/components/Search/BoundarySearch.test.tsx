@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { BoundarySearch } from './BoundarySearch';
 import * as boundaryService from '../../services/boundaryService';
 
@@ -10,7 +10,12 @@ describe('BoundarySearch Component', () => {
   const onClearBoundary = vi.fn();
 
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('triggers search and renders suggestions list on typing', async () => {
@@ -33,6 +38,11 @@ describe('BoundarySearch Component', () => {
 
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Occitanie' } });
+
+    // Advance past the 300ms debounce timer
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Occitanie')).toBeInTheDocument();
@@ -60,6 +70,11 @@ describe('BoundarySearch Component', () => {
 
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Toulouse' } });
+
+    // Advance past the 300ms debounce timer
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Toulouse')).toBeInTheDocument();

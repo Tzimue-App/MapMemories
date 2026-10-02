@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, Popup, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,28 +18,36 @@ interface MapViewProps {
   onDeleteBoundary?: (id: string) => void;
 }
 
-const DEFAULT_CENTER: [number, number] = [48.8566, 2.3522]; // Paris default
+const DEFAULT_CENTER: [number, number] = [48.8566, 2.3522];
 const DEFAULT_ZOOM = 13;
+
+const EMPTY_PINS: PinItem[] = [];
+const EMPTY_BOUNDARIES: SavedBoundaryItem[] = [];
+
+const useParsedGeoJson = (geojson: BoundaryItem['geojson']) =>
+  useMemo(() => {
+    try {
+      return typeof geojson === 'string' ? JSON.parse(geojson) : geojson;
+    } catch (e) {
+      console.error('Failed to parse boundary GeoJSON', e);
+      return null;
+    }
+  }, [geojson]);
 
 const MapController: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
+  const [lat, lng] = center;
 
   useEffect(() => {
-    map.flyTo(center, zoom, { duration: 1.5 });
-  }, [center, zoom, map]);
+    map.flyTo([lat, lng], zoom, { duration: 1.5 });
+  }, [lat, lng, zoom, map]);
 
   return null;
 };
 
 const BoundaryLayer: React.FC<{ boundary: BoundaryItem }> = ({ boundary }) => {
   const map = useMap();
-
-  let geoJsonData = null;
-  try {
-    geoJsonData = typeof boundary.geojson === 'string' ? JSON.parse(boundary.geojson) : boundary.geojson;
-  } catch (e) {
-    console.error('Failed to parse boundary GeoJSON', e);
-  }
+  const geoJsonData = useParsedGeoJson(boundary.geojson);
 
   useEffect(() => {
     if (geoJsonData && map) {
@@ -77,13 +85,7 @@ const SavedBoundaryLayer: React.FC<{
   onDelete?: (id: string) => void;
 }> = ({ boundary, onUpdateColor, onDelete }) => {
   const map = useMap();
-
-  let geoJsonData = null;
-  try {
-    geoJsonData = typeof boundary.geojson === 'string' ? JSON.parse(boundary.geojson) : boundary.geojson;
-  } catch (e) {
-    console.error('Failed to parse boundary GeoJSON', e);
-  }
+  const geoJsonData = useParsedGeoJson(boundary.geojson);
 
   useEffect(() => {
     if (geoJsonData && map) {
@@ -147,17 +149,19 @@ const createCustomPinIcon = (color: string) => {
 export const MapView: React.FC<MapViewProps> = ({
   center = DEFAULT_CENTER,
   zoom = DEFAULT_ZOOM,
-  initialPins = [],
+  initialPins = EMPTY_PINS,
   onPinsChange,
   activeBoundary,
-  savedBoundaries = [],
+  savedBoundaries = EMPTY_BOUNDARIES,
   onUpdateBoundaryColor,
   onDeleteBoundary,
 }) => {
   const [pins, setPins] = useState<PinItem[]>(initialPins);
 
+  // Synchronise l'état local quand le parent fournit de nouveaux pins
+  // (connexion/déconnexion, changement d'utilisateur, etc.).
   useEffect(() => {
-    setPins(initialPins || []);
+    setPins(initialPins);
   }, [initialPins]);
 
   const updatePins = (newPins: PinItem[]) => {
