@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Phase 5 — Rich Media Association (Photos & Notes): MinIO Object Storage integration, Photo & Note JPA persistence entities, secured REST media endpoints, user-isolated object storage management, frontend mediaService, PhotoUploader, PhotoGallery, PhotoLightbox, NoteList components, and tabbed popup configuration integration._
+_Description: Écrire le résumé ici..._
 
 <!--
 BUMP_TYPE :
@@ -11,8 +11,39 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: 2
-Frontend Bump: 2
+Backend Bump: none
+Frontend Bump: none
+
+### Backend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Frontend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Deployment & Configuration
+
+### ChangeLog
+
+---
+
+## [v0.6.0-a] - 2026-10-10
+
+# RememberMap - Alpha v0.6.0-a
+
+> [!WARNING]
+> **Statut : Alpha.** Version de développement destinée aux tests d'intégration internes.
+
+_Phase 5 — Rich Media Association (Photos & Notes): MinIO Object Storage integration, Photo & Note JPA persistence entities, secured REST media endpoints, user-isolated object storage management, frontend mediaService, PhotoUploader, PhotoGallery, PhotoLightbox, NoteList components, and tabbed popup configuration integration._
 
 ### Backend
 #### Features
@@ -37,8 +68,6 @@ Frontend Bump: 2
 
 ### Deployment & Configuration
 - Verify Docker compose MinIO environment compatibility and bucket initialization rules.
-
-### ChangeLog
 
 ---
 
