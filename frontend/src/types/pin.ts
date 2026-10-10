@@ -6,6 +6,7 @@ export interface PinItem {
   color: string;
   label?: string;
   radiusDisabled?: boolean;
+  dbId?: number;
 }
 
 export const DEFAULT_PIN_RADIUS = 1000; // 1 km in meters

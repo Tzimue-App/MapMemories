@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Écrire le résumé ici..._
+_Phase 5 — Rich Media Association (Photos & Notes): MinIO Object Storage integration, Photo & Note JPA persistence entities, secured REST media endpoints, user-isolated object storage management, frontend mediaService, PhotoUploader, PhotoGallery, PhotoLightbox, NoteList components, and tabbed popup configuration integration._
 
 <!--
 BUMP_TYPE :
@@ -11,26 +11,32 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: none
-Frontend Bump: none
+Backend Bump: 2
+Frontend Bump: 2
 
 ### Backend
 #### Features
-
-#### Patches
-
-#### Bug Fixes
-
+- Configure `MinioConfig` and `MinioStorageService` for S3-compatible MinIO bucket interaction (`remembermap-photos`).
+- Create `Photo` and `Note` JPA entities linked to `Modification` and `User` for metadata and comment persistence.
+- Create `PhotoRepository` and `NoteRepository` enforcing user-isolated database query filters.
+- Build `PhotoService` enforcing image file format validation (JPEG, PNG, WebP) and max 10MB file size limits.
+- Build `NoteService` for managing structured notes and memory descriptions on map pins.
+- Expose secured REST endpoints in `PhotoController` (`POST /api/modifications/{id}/photos`, `GET /api/modifications/{id}/photos`, `GET /api/photos/{id}/content`, `DELETE /api/modifications/{id}/photos/{id}`) and `NoteController`.
+- Create backend unit and integration TDD test suites (`MinioStorageServiceTest`, `PhotoServiceTest`, `PhotoRepositoryTest`, `NoteRepositoryTest`, `PhotoControllerTest`, `NoteControllerTest`).
 
 ### Frontend
 #### Features
-
-#### Patches
-
-#### Bug Fixes
-
+- Create TypeScript types (`PhotoItem`, `NoteItem`) in `frontend/src/types/media.ts`.
+- Create `mediaService` and `noteService` HTTP client modules handling multipart uploads, authenticated content retrieval, and deletions.
+- Build `PhotoUploader` component with image validation, drag-and-drop selector, file preview, and caption input.
+- Build `PhotoGallery` thumbnail grid component with deletion trigger.
+- Build `PhotoLightbox` modal component for full-resolution image preview.
+- Build `NoteList` component for adding and deleting rich text notes on pins.
+- Enhance `PinConfigPanel` with tabbed navigation ("Config", "Photos", "Notes") displaying item badges and media attachment panels.
+- Create frontend Vitest test suites (`mediaService.test.ts`, `noteService.test.ts`, `PinConfigPanel.test.tsx`).
 
 ### Deployment & Configuration
+- Verify Docker compose MinIO environment compatibility and bucket initialization rules.
 
 ### ChangeLog
 
