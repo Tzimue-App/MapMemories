@@ -40,6 +40,7 @@ const AppContent: React.FC = () => {
             if (mod.type === 'PIN' || mod.type === 'RADIUS') {
               loadedPins.push({
                 id: `pin-${mod.id}`,
+                dbId: mod.id,
                 lat: mod.lat,
                 lng: mod.lng,
                 label: mod.title,
@@ -147,21 +148,43 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handlePinsChange = (newPins: PinItem[]) => {
+  const handlePinsChange = async (newPins: PinItem[]) => {
+    // Delete removed pins from backend if authenticated
+    if (isAuthenticated && newPins.length < pins.length) {
+      const removedPins = pins.filter((p) => !newPins.some((np) => np.id === p.id));
+      removedPins.forEach((p) => {
+        const dbId = p.dbId || (p.id.startsWith('pin-') ? parseInt(p.id.replace('pin-', ''), 10) : null);
+        if (dbId && !isNaN(dbId)) {
+          modificationService.deleteModification(dbId).catch(() => {});
+        }
+      });
+    }
+
     setPins(newPins);
 
     // Save newly added pin to DB if authenticated
     if (isAuthenticated && newPins.length > pins.length) {
       const latestPin = newPins[newPins.length - 1];
-      modificationService.saveModification({
-        type: latestPin.radiusMeters > 0 ? 'RADIUS' : 'PIN',
-        title: latestPin.label || 'Saved Marker',
-        description: `Lat: ${latestPin.lat}, Lng: ${latestPin.lng}`,
-        lat: latestPin.lat,
-        lng: latestPin.lng,
-        radiusMeters: latestPin.radiusMeters,
-        color: latestPin.color,
-      }).catch(() => {});
+      try {
+        const saved = await modificationService.saveModification({
+          type: latestPin.radiusMeters > 0 ? 'RADIUS' : 'PIN',
+          title: latestPin.label || 'Saved Marker',
+          description: `Lat: ${latestPin.lat}, Lng: ${latestPin.lng}`,
+          lat: latestPin.lat,
+          lng: latestPin.lng,
+          radiusMeters: latestPin.radiusMeters,
+          color: latestPin.color,
+        });
+        if (saved && saved.id) {
+          setPins((prevPins) =>
+            prevPins.map((p) =>
+              p.id === latestPin.id ? { ...p, dbId: saved.id, id: `pin-${saved.id}` } : p
+            )
+          );
+        }
+      } catch {
+        // Fallback
+      }
     }
   };
 

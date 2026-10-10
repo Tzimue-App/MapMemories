@@ -17,6 +17,8 @@ public class ModificationDTO {
     private String geojson;
     private Long osmId;
     private LocalDateTime createdAt;
+    private java.util.List<PhotoDTO> photos = new java.util.ArrayList<>();
+    private java.util.List<NoteDTO> notes = new java.util.ArrayList<>();
 
     public ModificationDTO() {
     }
@@ -33,6 +35,22 @@ public class ModificationDTO {
         this.geojson = modification.getGeojson();
         this.osmId = modification.getOsmId();
         this.createdAt = modification.getCreatedAt();
+    }
+
+    public java.util.List<PhotoDTO> getPhotos() {
+        return photos;
+    }
+
+    public void setPhotos(java.util.List<PhotoDTO> photos) {
+        this.photos = photos;
+    }
+
+    public java.util.List<NoteDTO> getNotes() {
+        return notes;
+    }
+
+    public void setNotes(java.util.List<NoteDTO> notes) {
+        this.notes = notes;
     }
 
     public Long getId() {
