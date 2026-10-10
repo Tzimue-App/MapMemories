@@ -21,7 +21,7 @@ export const DetailSideDrawer: React.FC<DetailSideDrawerProps> = ({
   element,
   onClose,
   onDelete,
-  onUpdateColor,
+
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'photos' | 'notes'>('overview');
   const [photos, setPhotos] = useState<PhotoItem[]>([]);

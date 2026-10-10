@@ -22,11 +22,8 @@ function ringArea(coordinates: number[][]): number {
     const p3 = coordinates[(i + 2) % len];
 
     const lon1 = toRadians(p1[0]);
-    const lat1 = toRadians(p1[1]);
-    const lon2 = toRadians(p2[0]);
     const lat2 = toRadians(p2[1]);
     const lon3 = toRadians(p3[0]);
-    const lat3 = toRadians(p3[1]);
 
     totalAngle += (lon3 - lon1) * Math.sin(lat2);
   }
