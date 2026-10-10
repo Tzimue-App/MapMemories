@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { PinItem, DEFAULT_PIN_RADIUS, DEFAULT_PIN_COLOR } from '../../types/pin';
 import { BoundaryItem, SavedBoundaryItem, DEFAULT_BOUNDARY_COLOR } from '../../types/boundary';
+import { UnifiedMapElement } from '../../types/view';
 import { PinConfigPanel } from './PinConfigPanel';
 import { BoundaryConfigPanel } from './BoundaryConfigPanel';
 
@@ -16,6 +17,7 @@ interface MapViewProps {
   savedBoundaries?: SavedBoundaryItem[];
   onUpdateBoundaryColor?: (id: string, color: string) => void;
   onDeleteBoundary?: (id: string) => void;
+  onElementSelect?: (element: UnifiedMapElement) => void;
 }
 
 const DEFAULT_CENTER: [number, number] = [48.8566, 2.3522];
@@ -83,7 +85,8 @@ const SavedBoundaryLayer: React.FC<{
   boundary: SavedBoundaryItem;
   onUpdateColor?: (id: string, color: string) => void;
   onDelete?: (id: string) => void;
-}> = ({ boundary, onUpdateColor, onDelete }) => {
+  onSelect?: (element: UnifiedMapElement) => void;
+}> = ({ boundary, onUpdateColor, onDelete, onSelect }) => {
   const map = useMap();
   const geoJsonData = useParsedGeoJson(boundary.geojson);
 
@@ -105,10 +108,30 @@ const SavedBoundaryLayer: React.FC<{
 
   const currentColor = boundary.color || DEFAULT_BOUNDARY_COLOR;
 
+  const handleClick = () => {
+    if (onSelect) {
+      onSelect({
+        id: boundary.id,
+        type: 'BOUNDARY',
+        title: boundary.name,
+        description: boundary.displayName,
+        lat: geoJsonData?.coordinates?.[0]?.[0]?.[1] || 0,
+        lng: geoJsonData?.coordinates?.[0]?.[0]?.[0] || 0,
+        color: currentColor,
+        geojson: typeof boundary.geojson === 'string' ? boundary.geojson : JSON.stringify(boundary.geojson),
+        osmId: boundary.osmId,
+        adminLevel: boundary.adminLevel,
+      });
+    }
+  };
+
   return (
     <GeoJSON
       key={`${boundary.id}-${currentColor}`}
       data={geoJsonData}
+      eventHandlers={{
+        click: handleClick,
+      }}
       style={{
         color: currentColor,
         weight: 3,
@@ -155,11 +178,10 @@ export const MapView: React.FC<MapViewProps> = ({
   savedBoundaries = EMPTY_BOUNDARIES,
   onUpdateBoundaryColor,
   onDeleteBoundary,
+  onElementSelect,
 }) => {
   const [pins, setPins] = useState<PinItem[]>(initialPins);
 
-  // Synchronise l'état local quand le parent fournit de nouveaux pins
-  // (connexion/déconnexion, changement d'utilisateur, etc.).
   useEffect(() => {
     setPins(initialPins);
   }, [initialPins]);
@@ -229,6 +251,7 @@ export const MapView: React.FC<MapViewProps> = ({
             boundary={b}
             onUpdateColor={onUpdateBoundaryColor}
             onDelete={onDeleteBoundary}
+            onSelect={onElementSelect}
           />
         ))}
 
@@ -242,6 +265,21 @@ export const MapView: React.FC<MapViewProps> = ({
                 icon={createCustomPinIcon(pin.color)}
                 draggable={true}
                 eventHandlers={{
+                  click: () => {
+                    if (onElementSelect) {
+                      onElementSelect({
+                        id: pin.id,
+                        dbId: pin.dbId,
+                        type: pin.radiusMeters > 0 ? 'RADIUS' : 'PIN',
+                        title: pin.label || 'Saved Marker',
+                        description: `Coordinates: ${pin.lat}, ${pin.lng}`,
+                        lat: pin.lat,
+                        lng: pin.lng,
+                        radiusMeters: pin.radiusMeters,
+                        color: pin.color,
+                      });
+                    }
+                  },
                   dragend: (e) => {
                     const marker = e.target;
                     const position = marker.getLatLng();
