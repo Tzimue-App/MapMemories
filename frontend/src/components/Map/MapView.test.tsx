@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { MapView } from './MapView';
 import { PinItem } from '../../types/pin';
 import { SavedBoundaryItem } from '../../types/boundary';
+import { AuthProvider } from '../../context/AuthContext';
 
 describe('MapView Component', () => {
   it('renders Leaflet map container element', () => {
@@ -29,13 +30,52 @@ describe('MapView Component', () => {
       },
     ];
 
-    const { container } = render(<MapView center={[48.8566, 2.3522]} zoom={13} initialPins={mockPins} />);
+    const { container } = render(
+      <AuthProvider>
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={mockPins} />
+      </AuthProvider>
+    );
 
     const markerElement = container.querySelector('.leaflet-marker-icon');
     expect(markerElement).toBeInTheDocument();
 
     const circleElement = container.querySelector('path.leaflet-interactive');
     expect(circleElement).toBeInTheDocument();
+  });
+
+  it('invokes onElementSelect when a marker is clicked', () => {
+    const onElementSelect = vi.fn();
+    const mockPins: PinItem[] = [
+      {
+        id: 'pin-1',
+        dbId: 1,
+        lat: 48.8566,
+        lng: 2.3522,
+        radiusMeters: 0,
+        color: '#3B82F6',
+        label: 'Selectable Pin',
+      },
+    ];
+
+    const { container } = render(
+      <AuthProvider>
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={mockPins} onElementSelect={onElementSelect} />
+      </AuthProvider>
+    );
+
+    const markerElement = container.querySelector('.leaflet-marker-icon');
+    expect(markerElement).toBeInTheDocument();
+
+    if (markerElement) {
+      fireEvent.click(markerElement);
+    }
+    expect(onElementSelect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'pin-1',
+        type: 'PIN',
+        title: 'Selectable Pin',
+      })
+    );
   });
 
   it('updates markers when initialPins is updated to empty array', () => {
@@ -49,11 +89,19 @@ describe('MapView Component', () => {
       },
     ];
 
-    const { container, rerender } = render(<MapView center={[48.8566, 2.3522]} zoom={13} initialPins={mockPins} />);
+    const { container, rerender } = render(
+      <AuthProvider>
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={mockPins} />
+      </AuthProvider>
+    );
     expect(container.querySelector('.leaflet-marker-icon')).toBeInTheDocument();
 
-    // Rerender with empty initialPins (simulating user logout or switching to user with 0 pins)
-    rerender(<MapView center={[48.8566, 2.3522]} zoom={13} initialPins={[]} />);
+    // Rerender with empty initialPins
+    rerender(
+      <AuthProvider>
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={[]} />
+      </AuthProvider>
+    );
     expect(container.querySelector('.leaflet-marker-icon')).not.toBeInTheDocument();
   });
 
@@ -92,7 +140,9 @@ describe('MapView Component', () => {
     ];
 
     const { container } = render(
-      <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={disabledRadiusPins} />
+      <AuthProvider>
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={disabledRadiusPins} />
+      </AuthProvider>
     );
 
     const markerElement = container.querySelector('.leaflet-marker-icon');

@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapView } from './components/Map/MapView';
 import { AddressSearch } from './components/Search/AddressSearch';
 import { BoundarySearch } from './components/Search/BoundarySearch';
 import { SearchResult } from './services/nominatimService';
 import { BoundaryItem, SavedBoundaryItem, DEFAULT_BOUNDARY_COLOR, BOUNDARY_COLOR_OPTIONS } from './types/boundary';
 import { PinItem } from './types/pin';
+import { UnifiedMapElement } from './types/view';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/Auth/AuthModal';
 import { modificationService } from './services/modificationService';
+import { GlobalViewDrawer } from './components/Views/GlobalViewDrawer';
+import { DetailSideDrawer } from './components/Views/DetailSideDrawer';
 
 const AppContent: React.FC = () => {
   const [mapCenter, setMapCenter] = useState<[number, number]>([48.8566, 2.3522]);
@@ -18,6 +21,10 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'address' | 'boundary'>('address');
   const [showSavedList, setShowSavedList] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+
+  // Phase 6 State: Global & Detailed Views
+  const [isGlobalDrawerOpen, setIsGlobalDrawerOpen] = useState<boolean>(false);
+  const [selectedDetailElement, setSelectedDetailElement] = useState<UnifiedMapElement | null>(null);
 
   const { user, isAuthenticated, loading, logout } = useAuth();
 
@@ -76,8 +83,61 @@ const AppContent: React.FC = () => {
     } else {
       setPins([]);
       setSavedBoundaries([]);
+      setSelectedDetailElement(null);
+      setIsGlobalDrawerOpen(false);
     }
   }, [isAuthenticated]);
+
+  // Unified Elements List for Global Directory
+  const unifiedElements = useMemo<UnifiedMapElement[]>(() => {
+    const list: UnifiedMapElement[] = [];
+
+    pins.forEach((p) => {
+      const dbId = p.dbId || (p.id.startsWith('pin-') ? parseInt(p.id.replace('pin-', ''), 10) : undefined);
+      list.push({
+        id: p.id,
+        dbId: isNaN(dbId as number) ? undefined : dbId,
+        type: p.radiusMeters > 0 ? 'RADIUS' : 'PIN',
+        title: p.label || (p.radiusMeters > 0 ? 'Circle Area' : 'Pin Marker'),
+        description: `Coordinates: ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`,
+        lat: p.lat,
+        lng: p.lng,
+        radiusMeters: p.radiusMeters,
+        color: p.color,
+      });
+    });
+
+    savedBoundaries.forEach((b) => {
+      const dbId = b.id.startsWith('boundary-') ? parseInt(b.id.replace('boundary-', ''), 10) : undefined;
+      let centerLat = mapCenter[0];
+      let centerLng = mapCenter[1];
+      try {
+        const parsed = typeof b.geojson === 'string' ? JSON.parse(b.geojson) : b.geojson;
+        if (parsed?.coordinates?.[0]?.[0]) {
+          centerLng = parsed.coordinates[0][0][0];
+          centerLat = parsed.coordinates[0][0][1];
+        }
+      } catch {
+        // fallback
+      }
+
+      list.push({
+        id: b.id,
+        dbId: isNaN(dbId as number) ? undefined : dbId,
+        type: 'BOUNDARY',
+        title: b.name,
+        description: b.displayName,
+        lat: centerLat,
+        lng: centerLng,
+        color: b.color || DEFAULT_BOUNDARY_COLOR,
+        geojson: typeof b.geojson === 'string' ? b.geojson : JSON.stringify(b.geojson),
+        osmId: b.osmId,
+        adminLevel: b.adminLevel,
+      });
+    });
+
+    return list;
+  }, [pins, savedBoundaries, mapCenter]);
 
   const handleSelectLocation = (result: SearchResult) => {
     setMapCenter([result.lat, result.lon]);
@@ -123,7 +183,7 @@ const AppContent: React.FC = () => {
         );
       }
     } catch {
-      // Fallback for offline/failed save
+      // Fallback
     }
   };
 
@@ -135,6 +195,9 @@ const AppContent: React.FC = () => {
 
   const handleDeleteBoundary = async (id: string) => {
     setSavedBoundaries((prev) => prev.filter((b) => b.id !== id));
+    if (selectedDetailElement && selectedDetailElement.id === id) {
+      setSelectedDetailElement(null);
+    }
 
     if (isAuthenticated && id.startsWith('boundary-')) {
       const dbId = parseInt(id.replace('boundary-', ''), 10);
@@ -142,14 +205,13 @@ const AppContent: React.FC = () => {
         try {
           await modificationService.deleteModification(dbId);
         } catch {
-          // Ignore delete error
+          // Ignore
         }
       }
     }
   };
 
   const handlePinsChange = async (newPins: PinItem[]) => {
-    // Delete removed pins from backend if authenticated
     if (isAuthenticated && newPins.length < pins.length) {
       const removedPins = pins.filter((p) => !newPins.some((np) => np.id === p.id));
       removedPins.forEach((p) => {
@@ -157,12 +219,14 @@ const AppContent: React.FC = () => {
         if (dbId && !isNaN(dbId)) {
           modificationService.deleteModification(dbId).catch(() => {});
         }
+        if (selectedDetailElement && selectedDetailElement.id === p.id) {
+          setSelectedDetailElement(null);
+        }
       });
     }
 
     setPins(newPins);
 
-    // Save newly added pin to DB if authenticated
     if (isAuthenticated && newPins.length > pins.length) {
       const latestPin = newPins[newPins.length - 1];
       try {
@@ -188,6 +252,23 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleSelectElementFromDirectory = (element: UnifiedMapElement) => {
+    setMapCenter([element.lat, element.lng]);
+    setMapZoom(15);
+    setSelectedDetailElement(element);
+    setIsGlobalDrawerOpen(false);
+  };
+
+  const handleDeleteElementFromDetail = (element: UnifiedMapElement) => {
+    if (element.type === 'BOUNDARY') {
+      handleDeleteBoundary(element.id);
+    } else {
+      const updatedPins = pins.filter((p) => p.id !== element.id);
+      handlePinsChange(updatedPins);
+    }
+    setSelectedDetailElement(null);
+  };
+
   return (
     <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-gray-900">
       {/* Search & Header Overlay */}
@@ -195,7 +276,7 @@ const AppContent: React.FC = () => {
         <div className="pointer-events-auto w-full max-w-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-3.5 rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50">
           {!isAuthenticated && !loading && (
             <div className="mb-2.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/80 p-2 rounded-lg border border-amber-200 dark:border-amber-800/60 flex justify-between items-center">
-              <span>🔒 Sign in required to save map modifications.</span>
+              <span>?? Sign in required to save map modifications.</span>
               <button
                 onClick={() => setIsAuthModalOpen(true)}
                 className="font-bold underline ml-2 hover:text-amber-900 dark:hover:text-amber-100"
@@ -215,7 +296,7 @@ const AppContent: React.FC = () => {
                   : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
               }`}
             >
-              📍 Address Search
+              ?? Address Search
             </button>
             <button
               onClick={() => setActiveTab('boundary')}
@@ -225,7 +306,7 @@ const AppContent: React.FC = () => {
                   : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
               }`}
             >
-              🗺️ Boundary Search
+              ??? Boundary Search
             </button>
           </div>
 
@@ -237,20 +318,30 @@ const AppContent: React.FC = () => {
 
           <div className="mt-2.5 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
             {selectedPlace ? (
-              <span className="truncate max-w-[50%]">📍 {selectedPlace}</span>
+              <span className="truncate max-w-[45%]">?? {selectedPlace}</span>
             ) : (
               <span>Click map to drop pin & radius</span>
             )}
 
             <div className="flex items-center space-x-2">
+              {/* Directory Button */}
+              <button
+                type="button"
+                aria-label="Open memories directory"
+                onClick={() => setIsGlobalDrawerOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg font-medium transition-colors text-[11px] flex items-center gap-1 shadow-sm"
+              >
+                ?? Directory ({unifiedElements.length})
+              </button>
+
               <button
                 onClick={() => setShowSavedList(!showSavedList)}
                 className="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-medium hover:bg-purple-200 dark:hover:bg-purple-900 transition-colors text-[11px] flex items-center gap-1"
               >
-                🗺️ {savedBoundaries.length} {savedBoundaries.length === 1 ? 'Boundary' : 'Boundaries'}
+                ??? {savedBoundaries.length} {savedBoundaries.length === 1 ? 'Boundary' : 'Boundaries'}
               </button>
               <span className="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium text-[11px]">
-                📍 {pins.length} {pins.length === 1 ? 'Pin' : 'Pins'}
+                ?? {pins.length} {pins.length === 1 ? 'Pin' : 'Pins'}
               </span>
             </div>
           </div>
@@ -303,7 +394,7 @@ const AppContent: React.FC = () => {
         <div className="pointer-events-auto ml-4">
           {isAuthenticated ? (
             <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center space-x-3 text-xs">
-              <span className="font-medium text-gray-800 dark:text-gray-200">👤 {user?.username}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">?? {user?.username}</span>
               <button
                 onClick={logout}
                 className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold px-2.5 py-1 rounded-md transition"
@@ -316,7 +407,7 @@ const AppContent: React.FC = () => {
               onClick={() => setIsAuthModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl shadow-xl transition text-xs flex items-center gap-1.5"
             >
-              🔐 Sign In
+              ?? Sign In
             </button>
           )}
         </div>
@@ -332,8 +423,25 @@ const AppContent: React.FC = () => {
           savedBoundaries={savedBoundaries}
           onUpdateBoundaryColor={handleUpdateBoundaryColor}
           onDeleteBoundary={handleDeleteBoundary}
+          onElementSelect={(elem) => setSelectedDetailElement(elem)}
         />
       </main>
+
+      {/* Phase 6 Global Directory Drawer */}
+      <GlobalViewDrawer
+        isOpen={isGlobalDrawerOpen}
+        onClose={() => setIsGlobalDrawerOpen(false)}
+        elements={unifiedElements}
+        onSelectElement={handleSelectElementFromDirectory}
+      />
+
+      {/* Phase 6 Detailed Side Drawer */}
+      <DetailSideDrawer
+        isOpen={Boolean(selectedDetailElement)}
+        element={selectedDetailElement}
+        onClose={() => setSelectedDetailElement(null)}
+        onDelete={handleDeleteElementFromDetail}
+      />
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>

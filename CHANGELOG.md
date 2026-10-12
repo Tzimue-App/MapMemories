@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Écrire le résumé ici..._
+_Phase 6 — Global and Detailed Views: Global memories directory with multi-criteria filtering (element type, date range, search query), interactive slide-over detailed view drawer, geodesic polygon surface area calculations, photo carousel, and responsive Leaflet map integration._
 
 <!--
 BUMP_TYPE :
@@ -12,7 +12,7 @@ BUMP_TYPE :
 none = Pas de bump
 -->
 Backend Bump: none
-Frontend Bump: none
+Frontend Bump: 2
 
 ### Backend
 #### Features
@@ -24,6 +24,13 @@ Frontend Bump: none
 
 ### Frontend
 #### Features
+- Implement geodesic spherical polygon surface area calculation and circle area calculation utilities in `frontend/src/utils/geoArea.ts` with test coverage (`geoArea.test.ts`).
+- Create `filterModifications` utility and `FilterToolbar` component for multi-dimensional filtering by element type (All, Pins, Radii, Boundaries), date range (All, Today, Week, Month), and live search text query.
+- Build `PhotoCarousel` component supporting thumbnail navigation, photo index badges, full-stage view, and lightbox integration.
+- Build collapsible `GlobalViewDrawer` displaying user memories with category counters, badges, coordinates, and interactive click-to-fly map centering.
+- Build `DetailSideDrawer` slide-over panel displaying rich element metadata, formatted coordinates with quick copy button, exact calculated surface area, embedded photo carousel, and notes stream with inline creation/deletion.
+- Integrate Global View and Detailed View interactions into `MapView.tsx` (marker and polygon click handlers) and `App.tsx` (Directory toolbar button, slide-over management, and state sync).
+- Complete comprehensive Vitest TDD test suites (`geoArea.test.ts`, `filterModifications.test.ts`, `PhotoCarousel.test.tsx`, `FilterToolbar.test.tsx`, `GlobalViewDrawer.test.tsx`, `DetailSideDrawer.test.tsx`, `MapView.test.tsx`, `App.test.tsx`).
 
 #### Patches
 

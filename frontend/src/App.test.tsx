@@ -34,9 +34,28 @@ describe('App Component', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(/👤 testuser/i)).toBeInTheDocument();
+      expect(screen.getByText(/testuser/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Logout/i })).toBeInTheDocument();
     });
+  });
+
+  it('opens Global View Drawer when Memories Directory button is clicked', async () => {
+    vi.spyOn(authService, 'getToken').mockReturnValue('valid-token');
+    vi.spyOn(authService, 'getMe').mockResolvedValueOnce({ username: 'testuser', email: 'test@example.com' });
+    vi.spyOn(modificationService, 'getModifications').mockResolvedValueOnce([
+      { id: 1, type: 'PIN', title: 'Louvre Landmark', lat: 48.86, lng: 2.33, color: '#3B82F6' },
+    ]);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /open memories directory/i })).toBeInTheDocument();
+    });
+
+    const openDirectoryBtn = screen.getByRole('button', { name: /open memories directory/i });
+    fireEvent.click(openDirectoryBtn);
+
+    expect(screen.getByText('Memories Directory')).toBeInTheDocument();
   });
 
   it('resets pins and boundaries on logout', async () => {
@@ -49,13 +68,13 @@ describe('App Component', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(/📍 1 Pin/i)).toBeInTheDocument();
+      expect(screen.getByText('user1', { exact: false })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Logout/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/📍 0 Pins/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /open memories directory/i })).toHaveTextContent('Directory (0)');
     });
   });
 });
