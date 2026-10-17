@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Angular 21 frontend — a second frontend (`frontend-angular/`) with the same features as the React app, served on port 3001 and using the same backend._
+_Description: Écrire le résumé ici..._
 
 <!--
 BUMP_TYPE :
@@ -12,7 +12,7 @@ BUMP_TYPE :
 none = Pas de bump
 -->
 Backend Bump: none
-Frontend Bump: 2
+Frontend Bump: none
 
 ### Backend
 #### Features
@@ -24,23 +24,39 @@ Frontend Bump: 2
 
 ### Frontend
 #### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Deployment & Configuration
+
+### ChangeLog
+
+---
+
+## [v0.8.0-a] - 2026-10-17
+
+# RememberMap - Alpha v0.8.0-a
+
+> [!WARNING]
+> **Statut : Alpha.** Version de développement destinée aux tests d'intégration internes.
+
+### Frontend
+#### Features
 - Add the Angular 21 frontend in `frontend-angular/` (standalone components, signals, zoneless change detection, `OnPush`, new control flow) with the same features as the React app: map with pins/radii, boundary search, saved boundaries, photos and notes, global directory and detail drawer.
 - Replace the React context and local state with root services: `AuthService` (signals, session restore through `/api/auth/me`), `MapStateService` (pins, boundaries and UI state with explicit methods), and a functional JWT `HttpInterceptor`.
 - Drive Leaflet directly: effects diff the store against the layers on the map, and the pin/boundary popups host Angular components created with `createComponent`.
 - Written test-first: 28 Vitest spec files (196 tests) covering services, the interceptor, the state store, every component and the Leaflet map.
 
-#### Patches
-
 #### Bug Fixes
 - Angular frontend: picking a search suggestion no longer starts a new search; saved pins keep a stable id; a pin is never saved twice when a photo or note is added while it is still being saved; the date filter works on loaded memories.
-
 
 ### Deployment & Configuration
 - Add a `frontend-angular` service to `docker-compose.yml` (port `3001`), with its own Dockerfile and nginx config (same `/api` proxy).
 - Add a `Frontend Angular Tests (Vitest)` job to `test.yml` and to the `bump-and-tag.yml` gate.
 - `bump_version.py` keeps `frontend-angular/package.json` at the same version as `frontend/package.json`.
-
-### ChangeLog
 
 ---
 
