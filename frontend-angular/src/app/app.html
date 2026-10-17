@@ -1,0 +1,177 @@
+<div class="relative w-screen h-screen overflow-hidden flex flex-col bg-gray-900">
+  <!-- Search & header overlay -->
+  <header class="absolute top-4 left-4 right-4 z-10 flex justify-between items-start pointer-events-none">
+    <div
+      class="pointer-events-auto w-full max-w-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-3.5 rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50"
+    >
+      @if (!auth.isAuthenticated() && !auth.loading()) {
+        <div
+          class="mb-2.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/80 p-2 rounded-lg border border-amber-200 dark:border-amber-800/60 flex justify-between items-center"
+        >
+          <span>🔒 Sign in required to save map modifications.</span>
+          <button
+            type="button"
+            (click)="state.openAuthModal()"
+            class="font-bold underline ml-2 hover:text-amber-900 dark:hover:text-amber-100"
+          >
+            Sign In
+          </button>
+        </div>
+      }
+
+      <!-- Tab switcher -->
+      <div class="flex space-x-1 mb-2.5 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+        <button
+          type="button"
+          (click)="state.setActiveTab('address')"
+          class="flex-1 py-1 text-xs font-semibold rounded-md transition-colors"
+          [class]="
+            state.activeTab() === 'address'
+              ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+          "
+        >
+          📍 Address Search
+        </button>
+        <button
+          type="button"
+          (click)="state.setActiveTab('boundary')"
+          class="flex-1 py-1 text-xs font-semibold rounded-md transition-colors"
+          [class]="
+            state.activeTab() === 'boundary'
+              ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
+              : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+          "
+        >
+          🗺️ Boundary Search
+        </button>
+      </div>
+
+      @if (state.activeTab() === 'address') {
+        <app-address-search (selectLocation)="state.selectLocation($event)" />
+      } @else {
+        <app-boundary-search (selectBoundary)="state.addBoundary($event)" />
+      }
+
+      <div class="mt-2.5 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
+        @if (state.selectedPlace(); as place) {
+          <span class="truncate max-w-[45%]">📌 {{ place }}</span>
+        } @else {
+          <span>Click map to drop pin &amp; radius</span>
+        }
+
+        <div class="flex items-center space-x-2">
+          <button
+            type="button"
+            aria-label="Open memories directory"
+            (click)="state.openGlobalDrawer()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg font-medium transition-colors text-[11px] flex items-center gap-1 shadow-sm"
+          >
+            🗂️ Directory ({{ state.unifiedElements().length }})
+          </button>
+
+          <button
+            type="button"
+            (click)="state.toggleSavedList()"
+            class="bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-medium hover:bg-purple-200 dark:hover:bg-purple-900 transition-colors text-[11px] flex items-center gap-1"
+          >
+            🗺️ {{ state.boundariesLabel() }}
+          </button>
+          <span
+            class="bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium text-[11px]"
+          >
+            📍 {{ state.pinsLabel() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Saved boundaries panel -->
+      @if (state.showSavedList() && state.savedBoundaries().length > 0) {
+        <div class="mt-3 pt-2.5 border-t border-gray-200 dark:border-gray-700 max-h-48 overflow-y-auto">
+          <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Saved Boundaries</h4>
+          <ul class="space-y-1.5">
+            @for (boundary of state.savedBoundaries(); track boundary.id) {
+              <li class="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs">
+                <div class="flex items-center space-x-2 truncate mr-2">
+                  <div class="flex space-x-1 shrink-0">
+                    @for (option of quickColors; track option.value) {
+                      <button
+                        type="button"
+                        [title]="option.label"
+                        (click)="state.setBoundaryColor(boundary.id, option.value)"
+                        class="w-3.5 h-3.5 rounded-full transition-transform border"
+                        [class]="
+                          boundary.color === option.value
+                            ? 'scale-125 border-black dark:border-white'
+                            : 'border-transparent'
+                        "
+                        [style.background-color]="option.value"
+                      ></button>
+                    }
+                  </div>
+                  <span class="font-medium text-gray-900 dark:text-white truncate">{{ boundary.name }}</span>
+                </div>
+
+                <button
+                  type="button"
+                  (click)="state.removeBoundary(boundary.id)"
+                  class="text-red-500 hover:text-red-700 dark:hover:text-red-400 text-[11px] px-1.5 py-0.5 rounded"
+                  title="Delete boundary"
+                >
+                  Delete
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Auth header button -->
+    <div class="pointer-events-auto ml-4">
+      @if (auth.user(); as user) {
+        <div
+          class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center space-x-3 text-xs"
+        >
+          <span class="font-medium text-gray-800 dark:text-gray-200">👤 {{ user.username }}</span>
+          <button
+            type="button"
+            (click)="auth.logout()"
+            class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold px-2.5 py-1 rounded-md transition"
+          >
+            Logout
+          </button>
+        </div>
+      } @else {
+        <button
+          type="button"
+          (click)="state.openAuthModal()"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl shadow-xl transition text-xs flex items-center gap-1.5"
+        >
+          🔑 Sign In
+        </button>
+      }
+    </div>
+  </header>
+
+  <!-- Fullscreen map -->
+  <main class="flex-1 w-full h-full">
+    <app-map-view />
+  </main>
+
+  <app-global-view-drawer
+    [isOpen]="state.isGlobalDrawerOpen()"
+    [elements]="state.unifiedElements()"
+    (closed)="state.closeGlobalDrawer()"
+    (selectElement)="state.openFromDirectory($event)"
+  />
+
+  <app-detail-side-drawer
+    [isOpen]="state.selectedElement() !== null"
+    [element]="state.selectedElement()"
+    (closed)="state.selectElement(null)"
+    (delete)="state.deleteElement($event)"
+  />
+
+  <app-auth-modal [isOpen]="state.isAuthModalOpen()" (closed)="state.closeAuthModal()" />
+</div>

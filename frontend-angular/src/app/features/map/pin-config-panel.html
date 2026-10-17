@@ -1,0 +1,138 @@
+<div
+  class="w-72 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-md text-gray-800 dark:text-gray-100 text-sm flex flex-col gap-3"
+>
+  <!-- Header tabs -->
+  <div class="flex border-b border-gray-200 dark:border-gray-700">
+    @for (tab of ['config', 'photos', 'notes']; track tab) {
+      <button
+        type="button"
+        (click)="activeTab.set($any(tab))"
+        class="flex-1 py-1 text-center font-medium text-xs border-b-2 transition-colors relative"
+        [class]="
+          activeTab() === tab
+            ? 'border-blue-600 text-blue-600 dark:text-blue-400 font-semibold'
+            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+        "
+      >
+        @switch (tab) {
+          @case ('config') {
+            Config
+          }
+          @case ('photos') {
+            Photos
+            @if (media.photos().length > 0) {
+              <span
+                class="ml-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-[10px] px-1.5 rounded-full"
+                >{{ media.photos().length }}</span
+              >
+            }
+          }
+          @case ('notes') {
+            Notes
+            @if (media.notes().length > 0) {
+              <span
+                class="ml-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-[10px] px-1.5 rounded-full"
+                >{{ media.notes().length }}</span
+              >
+            }
+          }
+        }
+      </button>
+    }
+  </div>
+
+  @switch (activeTab()) {
+    @case ('config') {
+      <!-- Radius status -->
+      <div class="flex justify-between items-center">
+        <span
+          class="text-xs px-2 py-0.5 rounded font-medium"
+          [class]="
+            isRadiusDisabled()
+              ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+              : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+          "
+          >{{ radiusText() }}</span
+        >
+      </div>
+
+      <!-- Radius slider & presets -->
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-medium text-gray-600 dark:text-gray-300">
+          Radius: {{ radiusText() }}
+          <input
+            aria-label="Radius"
+            type="range"
+            min="0"
+            max="20000"
+            step="50"
+            [value]="pin().radiusMeters"
+            (input)="onSlider($event)"
+            class="block mt-1 w-full accent-blue-600 cursor-pointer h-2 bg-gray-200 rounded-lg appearance-none dark:bg-gray-700"
+          />
+        </label>
+
+        <div class="flex justify-between gap-1 mt-1">
+          @for (preset of presets; track preset.value) {
+            <button
+              type="button"
+              [attr.aria-label]="preset.label"
+              (click)="radiusChange.emit(preset.value)"
+              class="px-1.5 py-0.5 text-xs rounded transition-colors"
+              [class]="
+                pin().radiusMeters === preset.value
+                  ? 'bg-blue-600 text-white font-medium'
+                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+              "
+            >
+              {{ preset.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Colour selection -->
+      <div class="flex flex-col gap-1">
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Circle &amp; Pin Color</span>
+        <div class="flex gap-2 items-center mt-1">
+          @for (color of colorOptions; track color.value) {
+            <button
+              type="button"
+              [title]="color.label"
+              [attr.aria-label]="color.label"
+              (click)="colorChange.emit(color.value)"
+              class="w-6 h-6 rounded-full transition-transform border-2"
+              [class]="
+                pin().color === color.value
+                  ? 'scale-110 border-gray-900 dark:border-white shadow-md'
+                  : 'border-transparent hover:scale-105'
+              "
+              [style.background-color]="color.value"
+            ></button>
+          }
+        </div>
+      </div>
+    }
+    @case ('photos') {
+      <div class="space-y-3">
+        <app-photo-uploader [upload]="media.uploadPhoto" [isLoading]="media.isUploadingPhoto()" />
+        <app-photo-gallery [photos]="media.photos()" [deletePhoto]="media.deletePhoto" />
+      </div>
+    }
+    @case ('notes') {
+      <app-note-list [notes]="media.notes()" [addNote]="media.addNote" [deleteNote]="media.deleteNote" />
+    }
+  }
+
+  <!-- Action footer -->
+  <div class="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+    <button
+      type="button"
+      aria-label="Delete pin"
+      (click)="delete.emit(pin().id)"
+      class="w-full py-1 px-3 bg-red-500 hover:bg-red-600 text-white rounded font-medium text-xs transition-colors flex items-center justify-center gap-1"
+    >
+      <span>Delete Pin</span>
+    </button>
+  </div>
+</div>

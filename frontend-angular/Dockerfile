@@ -1,0 +1,22 @@
+# Stage 1: Build stage
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+# Copy package descriptors
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code and build production assets
+COPY . .
+RUN npm run build
+
+# Stage 2: Serve stage with Nginx
+FROM nginx:alpine AS runner
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist/remembermap-frontend-angular/browser /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

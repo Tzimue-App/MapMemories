@@ -33,6 +33,8 @@ if hasattr(sys.stderr, 'reconfigure'):
 
 PACKAGE_JSON = "package.json"
 FRONTEND_PACKAGE_JSON = os.path.join("frontend", "package.json")
+# The Angular frontend ships the same features as the React one, so it shares its version.
+FRONTEND_ANGULAR_PACKAGE_JSON = os.path.join("frontend-angular", "package.json")
 BACKEND_POM = os.path.join("backend", "pom.xml")
 CHANGELOG_FILE = "CHANGELOG.md"
 PROJECT_NAME = "RememberMap"
@@ -462,7 +464,7 @@ def promote_changelog_version(old_version, new_version):
 def git_commit_and_tag(new_version):
     """Stages changed files, commits with [bump_version], creates an annotated tag."""
     files_to_stage = []
-    for f in [PACKAGE_JSON, FRONTEND_PACKAGE_JSON, BACKEND_POM, CHANGELOG_FILE]:
+    for f in [PACKAGE_JSON, FRONTEND_PACKAGE_JSON, FRONTEND_ANGULAR_PACKAGE_JSON, BACKEND_POM, CHANGELOG_FILE]:
         if os.path.exists(f):
             files_to_stage.append(f)
 
@@ -572,6 +574,9 @@ def main():
     if new_frontend_version != current_frontend_version or branch == "test":
         update_package_json(FRONTEND_PACKAGE_JSON, new_frontend_version)
         print(f"   ✅ {FRONTEND_PACKAGE_JSON} -> {new_frontend_version}")
+        if os.path.exists(FRONTEND_ANGULAR_PACKAGE_JSON):
+            update_package_json(FRONTEND_ANGULAR_PACKAGE_JSON, new_frontend_version)
+            print(f"   ✅ {FRONTEND_ANGULAR_PACKAGE_JSON} -> {new_frontend_version}")
 
     if new_backend_version != current_backend_version or branch == "test":
         update_backend_pom(new_backend_version)

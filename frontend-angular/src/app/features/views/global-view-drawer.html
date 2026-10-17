@@ -1,0 +1,74 @@
+@if (isOpen()) {
+  <div
+    data-testid="drawer-backdrop"
+    class="fixed inset-0 bg-black/40 backdrop-blur-xs z-30 transition-opacity"
+    (click)="closed.emit()"
+  ></div>
+}
+
+<aside
+  data-testid="global-view-drawer"
+  class="fixed top-0 left-0 bottom-0 w-84 sm:w-96 bg-white dark:bg-gray-900 shadow-2xl border-r border-gray-200 dark:border-gray-800 z-40 flex flex-col transform transition-transform duration-300 ease-in-out"
+  [class.translate-x-0]="isOpen()"
+  [class.-translate-x-full]="!isOpen()"
+>
+  <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+    <div class="flex items-center gap-2">
+      <span class="text-lg">🗂️</span>
+      <div>
+        <h2 class="text-sm font-bold text-gray-900 dark:text-white">Memories Directory</h2>
+        <p class="text-[11px] text-gray-500 dark:text-gray-400">
+          {{ filtered().length }} {{ filtered().length === 1 ? 'element' : 'elements' }} listed
+        </p>
+      </div>
+    </div>
+    <button
+      type="button"
+      aria-label="Close memories drawer"
+      (click)="closed.emit()"
+      class="w-7 h-7 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition-colors text-sm"
+    >
+      ✕
+    </button>
+  </div>
+
+  <div class="p-3">
+    <app-filter-toolbar [(criteria)]="criteria" [counts]="counts()" />
+  </div>
+
+  <div class="flex-1 overflow-y-auto p-3 space-y-2">
+    @for (el of filtered(); track el.id) {
+      <div
+        (click)="selectElement.emit(el)"
+        class="group p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all cursor-pointer flex flex-col gap-1.5"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" [style.background-color]="el.color"></span>
+            <h3 class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{{ el.title }}</h3>
+          </div>
+          <span class="text-[10px] px-1.5 py-0.5 rounded font-medium" [class]="badges[el.type].class">{{
+            badges[el.type].label
+          }}</span>
+        </div>
+
+        @if (el.description) {
+          <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">{{ el.description }}</p>
+        }
+
+        <div
+          class="flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-800"
+        >
+          <span>{{ formatCoordinates(el.lat, el.lng) }}</span>
+          @if (el.radiusMeters && el.radiusMeters > 0) {
+            <span>Radius: {{ el.radiusMeters }}m</span>
+          } @else if (el.createdAt) {
+            <span>{{ el.createdAt | date: 'shortDate' }}</span>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="text-center py-12 text-xs text-gray-400 dark:text-gray-500">No matching elements found.</div>
+    }
+  </div>
+</aside>

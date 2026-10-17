@@ -1,7 +1,7 @@
 name: "Bump Version & Tag"
 
 # Triggered after a merge to dev or test.
-# First runs all tests (backend + frontend) as a gate, then reads bump type
+# First runs all tests (backend + both frontends) as a gate, then reads bump type
 # from CHANGELOG.md, increments version, commits, tags, and pushes.
 # paths-ignore prevents this workflow from re-triggering on its own commits
 # (which only touch CHANGELOG.md and package.json).
@@ -66,10 +66,39 @@ jobs:
       - name: Run tests
         run: npm run test -- --run
 
+  # ─── Frontend Angular Tests (Node + npm) ───────────────────
+  frontend-angular-tests:
+    name: "Frontend Angular Tests (Vitest)"
+    if: "!contains(github.event.head_commit.message, '[bump_version]')"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend-angular
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend-angular/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
   # ─── Bump Version (only after tests pass) ───────────────────
   bump:
     name: "Bump Version & Tag"
-    needs: [backend-tests, frontend-tests]
+    needs: [backend-tests, frontend-tests, frontend-angular-tests]
     if: "!contains(github.event.head_commit.message, '[bump_version]')"
     runs-on: ubuntu-latest
     permissions:
