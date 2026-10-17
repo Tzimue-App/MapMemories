@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Description: Écrire le résumé ici..._
+_Phase 7 — Polish, Performance & CI/CD: marker clustering, mobile/touch layout, production Docker packaging and Docker-aware CI in both the React and the Angular frontends._
 
 <!--
 BUMP_TYPE :
@@ -11,26 +11,35 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: none
-Frontend Bump: none
+Backend Bump: 3
+Frontend Bump: 2
 
 ### Backend
 #### Features
 
 #### Patches
+- Accept phone-sized photo uploads: `spring.servlet.multipart` limits raised from Spring's 1MB default to 15MB per file / 16MB per request (`MAX_UPLOAD_FILE_SIZE`, `MAX_UPLOAD_REQUEST_SIZE`); `PhotoService` still enforces its own 10MB rule.
+- Production server settings: `server.forward-headers-strategy=framework` (runs behind the nginx frontends) and graceful shutdown.
+- `ProductionConfigTest` guards these values in the main `application.yml`.
 
 #### Bug Fixes
 
 
 ### Frontend
 #### Features
+- Marker clustering with `leaflet.markercluster` in both frontends (React `MarkerClusterGroup` container built on `@react-leaflet/core`; Angular `MapView` adds markers to an `L.markerClusterGroup`). Size-coded cluster icons, spiderfy at max zoom, chunked loading. Radius circles stay on the map so areas remain visible when their markers are clustered.
+- Mobile layout: drawers are full width on phones (`w-full sm:w-96`) and close with a swipe towards their edge (`useSwipeToClose` hook / `SwipeToClose` directive); the search header stacks above the map on small screens; `h-dvh` root, `viewport-fit=cover` and safe-area padding.
+- Zoom control moved bottom-right (clear of the search header, reachable by thumb) with 40px tap targets on touch screens.
+- Written test-first: new specs for cluster utilities, swipe detection, clustered map layers, zoom control placement and drawer touch/width behaviour (React 115 tests, Angular 214 tests).
 
 #### Patches
-
-#### Bug Fixes
-
+- Test setups give Leaflet containers a real size in jsdom so viewport-culling plugins render markers.
 
 ### Deployment & Configuration
+- Dockerfiles: `npm ci` with a cached dependency layer, pinned `nginx:1.27-alpine`, container `HEALTHCHECK`s for the frontends, Maven dependency layer and container-aware JVM flags for the backend; new `.dockerignore` files for `frontend/` and `backend/`.
+- nginx (both frontends): gzip, immutable caching for fingerprinted bundles, `no-cache` SPA shell, security headers, `client_max_body_size 16m` for photo uploads.
+- `docker-compose.yml`: secrets and ports come from `.env` (template in `.env.example`, including `APP_JWT_SECRET`); Postgres, MinIO and the API are published on `127.0.0.1` only; the MinIO bucket is private (photos are streamed through the authenticated API); the backend waits for bucket creation and has a 1GB memory limit.
+- `test.yml`: workflow concurrency (superseded runs are cancelled), read-only token, React production build (`tsc` + `vite`), a Docker image build matrix (backend, frontend, frontend-angular) after the test jobs, and a `docker compose config` check. `bump-and-tag.yml` also builds the React app in its gate.
 
 ### ChangeLog
 

@@ -1,3 +1,12 @@
+# Production-style orchestration. Secrets come from a .env file next to this one
+# (copy .env.example -> .env and change every value before exposing the stack).
+# The defaults below only exist so `docker compose up` works out of the box locally.
+
+x-db-credentials: &db-credentials
+  POSTGRES_DB: ${POSTGRES_DB:-remembermap}
+  POSTGRES_USER: ${POSTGRES_USER:-remembermap}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-remembermap}
+
 services:
   # ─── Database (PostgreSQL + PostGIS) ────────────────────────
   postgres:
@@ -5,16 +14,15 @@ services:
     container_name: remembermap-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: remembermap
-      POSTGRES_USER: remembermap
-      POSTGRES_PASSWORD: remembermap
+      <<: *db-credentials
+    # Bound to localhost only: reachable for local tooling, never from the network
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U remembermap -d remembermap"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,11 +34,11 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: remembermap_access
-      MINIO_ROOT_PASSWORD: remembermap_secret
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-remembermap_access}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-remembermap_secret}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -46,11 +54,15 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-remembermap_access}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-remembermap_secret}
+      MINIO_BUCKET: ${MINIO_BUCKET:-remembermap-photos}
+    # Photos are streamed through the authenticated API, so the bucket stays private
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 remembermap_access remembermap_secret;
-      /usr/bin/mc mb --ignore-existing myminio/remembermap-photos;
-      /usr/bin/mc anonymous set download myminio/remembermap-photos;
+      /usr/bin/mc alias set myminio http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY};
+      /usr/bin/mc mb --ignore-existing myminio/$${MINIO_BUCKET};
       exit 0;
       "
 
@@ -59,33 +71,42 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: remembermap-backend:${APP_VERSION:-local}
     container_name: remembermap-backend
     restart: unless-stopped
+    # Only the nginx frontends talk to the API; publish on localhost for local debugging
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/remembermap
-      SPRING_DATASOURCE_USERNAME: remembermap
-      SPRING_DATASOURCE_PASSWORD: remembermap
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-remembermap}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-remembermap}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-remembermap}
       MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: remembermap_access
-      MINIO_SECRET_KEY: remembermap_secret
-      MINIO_BUCKET: remembermap-photos
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-remembermap_access}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-remembermap_secret}
+      MINIO_BUCKET: ${MINIO_BUCKET:-remembermap-photos}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      minio-create-bucket:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
   # ─── Frontend Application (React + TypeScript + Vite) ──────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: remembermap-frontend:${APP_VERSION:-local}
     container_name: remembermap-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
 
@@ -94,10 +115,11 @@ services:
     build:
       context: ./frontend-angular
       dockerfile: Dockerfile
+    image: remembermap-frontend-angular:${APP_VERSION:-local}
     container_name: remembermap-frontend-angular
     restart: unless-stopped
     ports:
-      - "3001:80"
+      - "${FRONTEND_ANGULAR_PORT:-3001}:80"
     depends_on:
       - backend
 

@@ -214,4 +214,52 @@ describe('MapView', () => {
 
     expect(remove).toHaveBeenCalled();
   });
+
+  describe('marker clustering', () => {
+    const addColocatedPins = (count: number, radiusMeters: number) => {
+      for (let i = 0; i < count; i++) {
+        state.addPin(48.8566, 2.3522);
+        state.setRadius(state.pins()[i].id, radiusMeters);
+      }
+    };
+    const clusters = (dom: Dom) => dom.queryAll('.remembermap-cluster');
+
+    it('groups overlapping markers into a single cluster showing their count', async () => {
+      const { dom, settle } = await render();
+      addColocatedPins(5, 0);
+      await settle();
+
+      expect(clusters(dom)).toHaveLength(1);
+      expect(clusters(dom)[0].textContent).toContain('5');
+      expect(dom.queryAll('.custom-pin-marker')).toHaveLength(0);
+    });
+
+    it('keeps radius circles visible for pins hidden inside a cluster', async () => {
+      const { dom, settle } = await render();
+      addColocatedPins(3, 500);
+      await settle();
+
+      expect(clusters(dom)).toHaveLength(1);
+      expect(paths(dom)).toHaveLength(3);
+    });
+
+    it('updates the cluster count when pins are removed', async () => {
+      const { dom, settle } = await render();
+      addColocatedPins(4, 0);
+      await settle();
+      expect(clusters(dom)[0].textContent).toContain('4');
+
+      state.removePin(state.pins()[0].id);
+      await settle();
+      expect(clusters(dom)[0].textContent).toContain('3');
+    });
+  });
+
+  describe('mobile-friendly controls', () => {
+    it('places the zoom control bottom-right, clear of the search header overlay', async () => {
+      const { dom } = await render();
+      expect(dom.query('.leaflet-bottom.leaflet-right .leaflet-control-zoom')).not.toBeNull();
+      expect(dom.query('.leaflet-top.leaflet-left .leaflet-control-zoom')).toBeNull();
+    });
+  });
 });

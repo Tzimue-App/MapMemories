@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { UnifiedMapElement } from '../../models/view';
 import { calculateCircleArea, calculatePolygonArea, formatArea, formatCoordinates } from '../../shared/geo-area';
+import { SwipeToClose } from '../../shared/swipe-to-close';
 import { memoryMedia } from '../media/memory-media';
 import { NoteList } from '../media/note-list';
 import { PhotoUploader } from '../media/photo-uploader';
@@ -12,7 +13,7 @@ const COPIED_FEEDBACK_MS = 2000;
 
 @Component({
   selector: 'app-detail-side-drawer',
-  imports: [PhotoCarousel, NoteList, PhotoUploader],
+  imports: [PhotoCarousel, NoteList, PhotoUploader, SwipeToClose],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './detail-side-drawer.html',
 })

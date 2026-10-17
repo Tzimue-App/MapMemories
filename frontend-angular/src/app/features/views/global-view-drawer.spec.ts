@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Dom, typeInto } from '../../../testing/dom';
+import { Dom, swipe, typeInto } from '../../../testing/dom';
 import { UnifiedMapElement } from '../../models/view';
 import { GlobalViewDrawer } from './global-view-drawer';
 
@@ -103,5 +103,27 @@ describe('GlobalViewDrawer', () => {
     dom.get('[data-testid="drawer-backdrop"]').click();
 
     expect(closed).toHaveBeenCalledTimes(2);
+  });
+
+  describe('mobile layout & touch', () => {
+    const drawer = (dom: Dom) => dom.get('[data-testid="global-view-drawer"]');
+
+    it('spans the full screen width on phones and a fixed width from the sm breakpoint', async () => {
+      const { dom } = await render();
+      expect(drawer(dom).classList).toContain('w-full');
+      expect(drawer(dom).classList).toContain('sm:w-96');
+    });
+
+    it('closes when swiped towards its edge (left)', async () => {
+      const { dom, closed } = await render();
+      swipe(drawer(dom), { x: 300, y: 200 }, { x: 120, y: 200 });
+      expect(closed).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays open when swiped away from its edge (right)', async () => {
+      const { dom, closed } = await render();
+      swipe(drawer(dom), { x: 100, y: 200 }, { x: 300, y: 200 });
+      expect(closed).not.toHaveBeenCalled();
+    });
   });
 });

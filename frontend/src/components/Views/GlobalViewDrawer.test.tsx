@@ -91,4 +91,37 @@ describe('GlobalViewDrawer Component', () => {
     expect(screen.getByText('Montmartre Point')).toBeInTheDocument();
     expect(screen.queryByText('Ile-de-France')).not.toBeInTheDocument();
   });
+
+  describe('mobile layout & touch', () => {
+    const renderOpen = (onClose = vi.fn()) =>
+      render(
+        <GlobalViewDrawer isOpen={true} onClose={onClose} elements={mockElements} onSelectElement={vi.fn()} />
+      );
+
+    const swipe = (el: Element, fromX: number, toX: number, y = 200) => {
+      fireEvent.touchStart(el, { touches: [{ clientX: fromX, clientY: y }] });
+      fireEvent.touchEnd(el, { changedTouches: [{ clientX: toX, clientY: y }] });
+    };
+
+    it('spans the full screen width on phones and a fixed width from the sm breakpoint', () => {
+      renderOpen();
+      const drawer = screen.getByTestId('global-view-drawer');
+      expect(drawer).toHaveClass('w-full');
+      expect(drawer).toHaveClass('sm:w-96');
+    });
+
+    it('closes when swiped towards its edge (left)', () => {
+      const onClose = vi.fn();
+      renderOpen(onClose);
+      swipe(screen.getByTestId('global-view-drawer'), 300, 120);
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays open when swiped away from its edge (right)', () => {
+      const onClose = vi.fn();
+      renderOpen(onClose);
+      swipe(screen.getByTestId('global-view-drawer'), 100, 300);
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
 });

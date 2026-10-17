@@ -10,11 +10,46 @@ body {
   margin: 0;
   display: flex;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: #111827;
   color: #f9fafb;
 }
 
 #root {
   width: 100%;
+}
+
+/* ─── Marker clusters (Phase 7) ─────────────────────────── */
+.leaflet-marker-icon.remembermap-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.remembermap-cluster--small {
+  background-color: rgba(37, 99, 235, 0.9);
+}
+
+.remembermap-cluster--medium {
+  background-color: rgba(124, 58, 237, 0.9);
+}
+
+.remembermap-cluster--large {
+  background-color: rgba(220, 38, 38, 0.9);
+  font-size: 14px;
+}
+
+/* Bigger tap targets for map controls on touch screens */
+@media (pointer: coarse) {
+  .leaflet-touch .leaflet-bar a {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+  }
 }

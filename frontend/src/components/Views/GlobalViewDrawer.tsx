@@ -3,6 +3,7 @@ import { UnifiedMapElement, FilterCriteria } from '../../types/view';
 import { FilterToolbar } from './FilterToolbar';
 import { filterModifications } from '../../utils/filterModifications';
 import { formatCoordinates } from '../../utils/geoArea';
+import { useSwipeToClose } from '../../hooks/useSwipeToClose';
 
 interface GlobalViewDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export const GlobalViewDrawer: React.FC<GlobalViewDrawerProps> = ({
     dateRange: 'ALL',
     searchQuery: '',
   });
+
+  const swipeHandlers = useSwipeToClose('left', onClose);
 
   const counts = useMemo(() => {
     return {
@@ -60,7 +63,8 @@ export const GlobalViewDrawer: React.FC<GlobalViewDrawerProps> = ({
       {/* Drawer */}
       <aside
         data-testid="global-view-drawer"
-        className={`fixed top-0 left-0 bottom-0 w-84 sm:w-96 bg-white dark:bg-gray-900 shadow-2xl border-r border-gray-200 dark:border-gray-800 z-40 flex flex-col transform transition-transform duration-300 ease-in-out ${
+        {...swipeHandlers}
+        className={`fixed top-0 left-0 bottom-0 w-full sm:w-96 pb-[env(safe-area-inset-bottom)] bg-white dark:bg-gray-900 shadow-2xl border-r border-gray-200 dark:border-gray-800 z-40 flex flex-col transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

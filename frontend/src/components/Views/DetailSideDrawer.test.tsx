@@ -131,4 +131,34 @@ describe('DetailSideDrawer Component', () => {
 
     expect(onDelete).toHaveBeenCalledWith(pinElement);
   });
+
+  describe('mobile layout & touch', () => {
+    const swipe = (el: Element, fromX: number, toX: number, y = 200) => {
+      fireEvent.touchStart(el, { touches: [{ clientX: fromX, clientY: y }] });
+      fireEvent.touchEnd(el, { changedTouches: [{ clientX: toX, clientY: y }] });
+    };
+
+    it('spans the full screen width on phones and a fixed width from the sm breakpoint', () => {
+      render(<DetailSideDrawer isOpen={true} element={circleElement} onClose={vi.fn()} />);
+      const drawer = screen.getByTestId('detail-side-drawer');
+      expect(drawer).toHaveClass('w-full');
+      expect(drawer).toHaveClass('sm:w-96');
+    });
+
+    it('closes when swiped towards its edge (right)', () => {
+      const onClose = vi.fn();
+      render(<DetailSideDrawer isOpen={true} element={circleElement} onClose={onClose} />);
+      swipe(screen.getByTestId('detail-side-drawer'), 100, 300);
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays open on a vertical scroll gesture', () => {
+      const onClose = vi.fn();
+      render(<DetailSideDrawer isOpen={true} element={circleElement} onClose={onClose} />);
+      const drawer = screen.getByTestId('detail-side-drawer');
+      fireEvent.touchStart(drawer, { touches: [{ clientX: 100, clientY: 100 }] });
+      fireEvent.touchEnd(drawer, { changedTouches: [{ clientX: 160, clientY: 400 }] });
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
 });

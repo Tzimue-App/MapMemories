@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { Dom, typeInto } from '../../../testing/dom';
+import { Dom, swipe, typeInto } from '../../../testing/dom';
 import { fakeMediaService, fakeNoteService, provideFake } from '../../../testing/fakes';
 import { photo } from '../../../testing/photos';
 import { MediaService } from '../../core/media.service';
@@ -174,5 +174,27 @@ describe('DetailSideDrawer', () => {
     await click(dom.allButtons('Delete Note')[0]);
     expect(notes.deleteNote).toHaveBeenCalledWith(10, 300);
     expect(dom.queryByText('New note', 'p')).toBeNull();
+  });
+
+  describe('mobile layout & touch', () => {
+    const drawer = (dom: Dom) => dom.get('[data-testid="detail-side-drawer"]');
+
+    it('spans the full screen width on phones and a fixed width from the sm breakpoint', async () => {
+      const { dom } = await render(circleElement);
+      expect(drawer(dom).classList).toContain('w-full');
+      expect(drawer(dom).classList).toContain('sm:w-96');
+    });
+
+    it('closes when swiped towards its edge (right)', async () => {
+      const { dom, closed } = await render(circleElement);
+      swipe(drawer(dom), { x: 100, y: 200 }, { x: 300, y: 200 });
+      expect(closed).toHaveBeenCalledTimes(1);
+    });
+
+    it('stays open on a vertical scroll gesture', async () => {
+      const { dom, closed } = await render(circleElement);
+      swipe(drawer(dom), { x: 100, y: 100 }, { x: 160, y: 400 });
+      expect(closed).not.toHaveBeenCalled();
+    });
   });
 });

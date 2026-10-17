@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, Popup, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, Popup, GeoJSON, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { PinItem, DEFAULT_PIN_RADIUS, DEFAULT_PIN_COLOR } from '../../types/pin';
@@ -7,6 +7,7 @@ import { BoundaryItem, SavedBoundaryItem, DEFAULT_BOUNDARY_COLOR } from '../../t
 import { UnifiedMapElement } from '../../types/view';
 import { PinConfigPanel } from './PinConfigPanel';
 import { BoundaryConfigPanel } from './BoundaryConfigPanel';
+import { MarkerClusterGroup } from './MarkerClusterGroup';
 
 interface MapViewProps {
   center?: [number, number];
@@ -234,8 +235,11 @@ export const MapView: React.FC<MapViewProps> = ({
         center={center}
         zoom={zoom}
         scrollWheelZoom={true}
+        zoomControl={false}
         className="w-full h-full z-0"
       >
+        {/* Bottom-right keeps the zoom buttons reachable by thumb and clear of the search header */}
+        <ZoomControl position="bottomright" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -255,63 +259,64 @@ export const MapView: React.FC<MapViewProps> = ({
           />
         ))}
 
-        {pins.map((pin) => {
-          const showCircle = pin.radiusMeters > 0 && !pin.radiusDisabled;
-
-          return (
-            <React.Fragment key={pin.id}>
-              <Marker
-                position={[pin.lat, pin.lng]}
-                icon={createCustomPinIcon(pin.color)}
-                draggable={true}
-                eventHandlers={{
-                  click: () => {
-                    if (onElementSelect) {
-                      onElementSelect({
-                        id: pin.id,
-                        dbId: pin.dbId,
-                        type: pin.radiusMeters > 0 ? 'RADIUS' : 'PIN',
-                        title: pin.label || 'Saved Marker',
-                        description: `Coordinates: ${pin.lat}, ${pin.lng}`,
-                        lat: pin.lat,
-                        lng: pin.lng,
-                        radiusMeters: pin.radiusMeters,
-                        color: pin.color,
-                      });
-                    }
-                  },
-                  dragend: (e) => {
-                    const marker = e.target;
-                    const position = marker.getLatLng();
-                    handlePinMove(pin.id, position.lat, position.lng);
-                  },
-                }}
-              >
-                <Popup className="pin-config-popup" offset={[0, -10]}>
-                  <PinConfigPanel
-                    pin={pin}
-                    onRadiusChange={(radius) => handleRadiusChange(pin.id, radius)}
-                    onColorChange={(color) => handleColorChange(pin.id, color)}
-                    onDelete={() => handleDeletePin(pin.id)}
-                  />
-                </Popup>
-              </Marker>
-
-              {showCircle && (
-                <Circle
-                  center={[pin.lat, pin.lng]}
-                  radius={pin.radiusMeters}
-                  pathOptions={{
-                    color: pin.color,
-                    fillColor: pin.color,
-                    fillOpacity: 0.2,
-                    weight: 2,
-                  }}
+        <MarkerClusterGroup>
+          {pins.map((pin) => (
+            <Marker
+              key={pin.id}
+              position={[pin.lat, pin.lng]}
+              icon={createCustomPinIcon(pin.color)}
+              draggable={true}
+              eventHandlers={{
+                click: () => {
+                  if (onElementSelect) {
+                    onElementSelect({
+                      id: pin.id,
+                      dbId: pin.dbId,
+                      type: pin.radiusMeters > 0 ? 'RADIUS' : 'PIN',
+                      title: pin.label || 'Saved Marker',
+                      description: `Coordinates: ${pin.lat}, ${pin.lng}`,
+                      lat: pin.lat,
+                      lng: pin.lng,
+                      radiusMeters: pin.radiusMeters,
+                      color: pin.color,
+                    });
+                  }
+                },
+                dragend: (e) => {
+                  const marker = e.target;
+                  const position = marker.getLatLng();
+                  handlePinMove(pin.id, position.lat, position.lng);
+                },
+              }}
+            >
+              <Popup className="pin-config-popup" offset={[0, -10]}>
+                <PinConfigPanel
+                  pin={pin}
+                  onRadiusChange={(radius) => handleRadiusChange(pin.id, radius)}
+                  onColorChange={(color) => handleColorChange(pin.id, color)}
+                  onDelete={() => handleDeletePin(pin.id)}
                 />
-              )}
-            </React.Fragment>
-          );
-        })}
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
+
+        {/* Radius circles stay outside the cluster group so areas remain visible when markers are clustered */}
+        {pins
+          .filter((pin) => pin.radiusMeters > 0 && !pin.radiusDisabled)
+          .map((pin) => (
+            <Circle
+              key={`circle-${pin.id}`}
+              center={[pin.lat, pin.lng]}
+              radius={pin.radiusMeters}
+              pathOptions={{
+                color: pin.color,
+                fillColor: pin.color,
+                fillOpacity: 0.2,
+                weight: 2,
+              }}
+            />
+          ))}
       </MapContainer>
     </div>
   );

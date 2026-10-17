@@ -79,3 +79,16 @@ export function typeInto(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelect
 }
 
 export const tick = () => new Promise<void>((resolve) => setTimeout(resolve));
+
+type Point = { x: number; y: number };
+
+/** Dispatches a touchstart/touchend pair (jsdom has no Touch constructor, so touch lists are stubbed). */
+export function swipe(el: Element, from: Point, to: Point): void {
+  const fire = (type: 'touchstart' | 'touchend', list: 'touches' | 'changedTouches', { x, y }: Point) => {
+    const event = new Event(type, { bubbles: true });
+    Object.defineProperty(event, list, { value: [{ clientX: x, clientY: y }] });
+    el.dispatchEvent(event);
+  };
+  fire('touchstart', 'touches', from);
+  fire('touchend', 'changedTouches', to);
+}

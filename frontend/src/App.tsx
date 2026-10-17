@@ -270,10 +270,10 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden flex flex-col bg-gray-900">
+    <div className="relative w-full h-dvh overflow-hidden flex flex-col bg-gray-900">
       {/* Search & Header Overlay */}
-      <header className="absolute top-4 left-4 right-4 z-10 flex justify-between items-start pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-3.5 rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50">
+      <header className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-10 flex flex-col-reverse sm:flex-row sm:justify-between items-stretch sm:items-start gap-2 pointer-events-none">
+        <div className="pointer-events-auto w-full max-w-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-2.5 sm:p-3.5 rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50">
           {!isAuthenticated && !loading && (
             <div className="mb-2.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/80 p-2 rounded-lg border border-amber-200 dark:border-amber-800/60 flex justify-between items-center">
               <span>?? Sign in required to save map modifications.</span>
@@ -316,14 +316,14 @@ const AppContent: React.FC = () => {
             <BoundarySearch onSelectBoundary={handleSelectBoundary} />
           )}
 
-          <div className="mt-2.5 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-400 px-1">
             {selectedPlace ? (
               <span className="truncate max-w-[45%]">?? {selectedPlace}</span>
             ) : (
               <span>Click map to drop pin & radius</span>
             )}
 
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Directory Button */}
               <button
                 type="button"
@@ -391,7 +391,7 @@ const AppContent: React.FC = () => {
         </div>
 
         {/* Auth Header Button */}
-        <div className="pointer-events-auto ml-4">
+        <div className="pointer-events-auto self-end sm:self-auto sm:ml-4 shrink-0">
           {isAuthenticated ? (
             <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center space-x-3 text-xs">
               <span className="font-medium text-gray-800 dark:text-gray-200">?? {user?.username}</span>

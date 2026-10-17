@@ -14,6 +14,14 @@ on:
     branches:
       - "feature/**"
 
+permissions:
+  contents: read
+
+# A newer push to the same branch/PR supersedes the running pipeline
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ─── Backend Tests (Java 25 + Maven) ───────────────────────
   backend-tests:
@@ -64,6 +72,9 @@ jobs:
       - name: Run tests
         run: npm run test -- --run
 
+      - name: Production build (tsc + vite)
+        run: npm run build
+
   # ─── Frontend Angular Tests (Node + npm) ───────────────────
   frontend-angular-tests:
     name: "Frontend Angular Tests (Vitest)"
@@ -91,3 +102,42 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  # ─── Production Docker images (build only, never pushed) ───
+  # Proves the Dockerfiles still build once the test suites are green.
+  docker-build:
+    name: "Docker Build (${{ matrix.service }})"
+    needs: [backend-tests, frontend-tests, frontend-angular-tests]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend, frontend-angular]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
+          push: false
+          tags: remembermap-${{ matrix.service }}:ci
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+  # ─── Compose file sanity check ─────────────────────────────
+  compose-config:
+    name: "Validate docker-compose.yml"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate compose configuration
+        run: docker compose -f docker-compose.yml config --quiet

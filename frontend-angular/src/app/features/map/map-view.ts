@@ -19,6 +19,7 @@ import * as L from 'leaflet';
 import { MapStateService } from '../../core/map-state.service';
 import { DEFAULT_BOUNDARY_COLOR, SavedBoundaryItem } from '../../models/boundary';
 import { PinItem } from '../../models/pin';
+import { CLUSTER_OPTIONS } from '../../shared/cluster';
 import { parseGeoJson } from '../../shared/geo-area';
 import { BoundaryConfigPanel } from './boundary-config-panel';
 import { PinConfigPanel } from './pin-config-panel';
@@ -73,6 +74,8 @@ export class MapView {
 
   private readonly container = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
   private readonly map = signal<L.Map | undefined>(undefined);
+  /** Markers live in the cluster group; radius circles go straight on the map so they stay visible. */
+  private readonly clusterGroup = L.markerClusterGroup(CLUSTER_OPTIONS);
   private readonly pinLayers = new Map<string, PinLayers>();
   private readonly boundaryLayers = new Map<string, BoundaryLayers>();
 
@@ -107,8 +110,14 @@ export class MapView {
 
   private createMap(): L.Map {
     const [lat, lng] = this.state.center();
-    const map = L.map(this.container().nativeElement, { scrollWheelZoom: true }).setView([lat, lng], this.state.zoom());
+    const map = L.map(this.container().nativeElement, { scrollWheelZoom: true, zoomControl: false }).setView(
+      [lat, lng],
+      this.state.zoom(),
+    );
     L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION }).addTo(map);
+    // Bottom-right keeps the zoom buttons reachable by thumb and clear of the search header
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    this.clusterGroup.addTo(map);
     map.on('click', (e: L.LeafletMouseEvent) => this.state.addPin(e.latlng.lat, e.latlng.lng));
     return map;
   }
@@ -118,7 +127,7 @@ export class MapView {
   private syncPins(map: L.Map, pins: PinItem[]): void {
     const ids = new Set(pins.map((p) => p.id));
     for (const [id, entry] of this.pinLayers) {
-      if (!ids.has(id)) this.removePinLayers(map, id, entry);
+      if (!ids.has(id)) this.removePinLayers(id, entry);
     }
     for (const pin of pins) {
       const entry = this.pinLayers.get(pin.id);
@@ -131,7 +140,8 @@ export class MapView {
   }
 
   private addPinLayers(map: L.Map, pin: PinItem): PinLayers {
-    const marker = L.marker([pin.lat, pin.lng], { icon: createPinIcon(pin.color), draggable: true }).addTo(map);
+    const marker = L.marker([pin.lat, pin.lng], { icon: createPinIcon(pin.color), draggable: true });
+    this.clusterGroup.addLayer(marker);
     const entry: PinLayers = { pin, marker };
 
     marker.on('click', () => this.state.selectElementById(pin.id));
@@ -171,10 +181,10 @@ export class MapView {
     entry.panel?.setInput('pin', pin);
   }
 
-  private removePinLayers(map: L.Map, id: string, entry: PinLayers): void {
+  private removePinLayers(id: string, entry: PinLayers): void {
     entry.marker.closePopup();
     entry.panel?.destroy();
-    map.removeLayer(entry.marker);
+    this.clusterGroup.removeLayer(entry.marker);
     entry.circle?.remove();
     this.pinLayers.delete(id);
   }

@@ -16,6 +16,20 @@ spring:
       hibernate:
         format_sql: true
 
+  # Phone photos routinely exceed Spring's 1MB default; they are resized server-side after upload
+  servlet:
+    multipart:
+      max-file-size: ${MAX_UPLOAD_FILE_SIZE:15MB}
+      max-request-size: ${MAX_UPLOAD_REQUEST_SIZE:16MB}
+
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+server:
+  # Runs behind the nginx frontends, which set X-Forwarded-* headers
+  forward-headers-strategy: framework
+  shutdown: graceful
+
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
   accessKey: ${MINIO_ACCESS_KEY:remembermap_access}

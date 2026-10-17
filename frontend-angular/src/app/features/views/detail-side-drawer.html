@@ -5,7 +5,9 @@
 
   <aside
     data-testid="detail-side-drawer"
-    class="fixed top-0 right-0 bottom-0 w-84 sm:w-96 bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-800 z-40 flex flex-col transform transition-transform duration-300 ease-in-out"
+    appSwipeToClose="right"
+    (swipeClose)="closed.emit()"
+    class="fixed top-0 right-0 bottom-0 w-full sm:w-96 pb-[env(safe-area-inset-bottom)] bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-800 z-40 flex flex-col transform transition-transform duration-300 ease-in-out"
     [class.translate-x-0]="isOpen()"
     [class.translate-x-full]="!isOpen()"
   >
