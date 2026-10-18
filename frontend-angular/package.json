@@ -1,6 +1,6 @@
 {
   "name": "remembermap-frontend-angular",
-  "version": "0.8.0-a",
+  "version": "0.9.0-a",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

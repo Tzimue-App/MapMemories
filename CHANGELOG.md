@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-_Phase 7 — Polish, Performance & CI/CD: marker clustering, mobile/touch layout, production Docker packaging and Docker-aware CI in both the React and the Angular frontends._
+_Description: Écrire le résumé ici..._
 
 <!--
 BUMP_TYPE :
@@ -11,19 +11,46 @@ BUMP_TYPE :
 3 = Patch (0.0.X)
 none = Pas de bump
 -->
-Backend Bump: 3
-Frontend Bump: 2
+Backend Bump: none
+Frontend Bump: none
 
 ### Backend
 #### Features
 
 #### Patches
-- Accept phone-sized photo uploads: `spring.servlet.multipart` limits raised from Spring's 1MB default to 15MB per file / 16MB per request (`MAX_UPLOAD_FILE_SIZE`, `MAX_UPLOAD_REQUEST_SIZE`); `PhotoService` still enforces its own 10MB rule.
-- Production server settings: `server.forward-headers-strategy=framework` (runs behind the nginx frontends) and graceful shutdown.
-- `ProductionConfigTest` guards these values in the main `application.yml`.
 
 #### Bug Fixes
 
+
+### Frontend
+#### Features
+
+#### Patches
+
+#### Bug Fixes
+
+
+### Deployment & Configuration
+
+### ChangeLog
+
+---
+
+## [v0.9.0-a] - 2026-10-18
+
+# RememberMap - Alpha v0.9.0-a
+
+> [!WARNING]
+> **Statut : Alpha.** Version de développement destinée aux tests d'intégration internes.
+
+_Phase 7 — Polish, Performance & CI/CD: marker clustering, mobile/touch layout, production Docker packaging and Docker-aware CI in both the React and the Angular frontends._
+
+### Backend
+
+#### Patches
+- Accept phone-sized photo uploads: `spring.servlet.multipart` limits raised from Spring's 1MB default to 15MB per file / 16MB per request (`MAX_UPLOAD_FILE_SIZE`, `MAX_UPLOAD_REQUEST_SIZE`); `PhotoService` still enforces its own 10MB rule.
+- Production server settings: `server.forward-headers-strategy=framework` (runs behind the nginx frontends) and graceful shutdown.
+- `ProductionConfigTest` guards these values in the main `application.yml`.
 
 ### Frontend
 #### Features
@@ -43,8 +70,6 @@ Frontend Bump: 2
 - nginx (both frontends): gzip, immutable caching for fingerprinted bundles, `no-cache` SPA shell, security headers, `client_max_body_size 16m` for photo uploads.
 - `docker-compose.yml`: secrets and ports come from `.env` (template in `.env.example`, including `APP_JWT_SECRET`); Postgres, MinIO and the API are published on `127.0.0.1` only; the MinIO bucket is private (photos are streamed through the authenticated API); the backend waits for bucket creation and has a 1GB memory limit.
 - `test.yml`: workflow concurrency (superseded runs are cancelled), read-only token, React production build (`tsc` + `vite`), a Docker image build matrix (backend, frontend, frontend-angular) after the test jobs, and a `docker compose config` check. `bump-and-tag.yml` also builds the React app in its gate.
-
-### ChangeLog
 
 ---
 
