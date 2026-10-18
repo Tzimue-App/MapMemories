@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend-angular", "start"],
       "port": 3001
+    },
+    {
+      "name": "frontend-angular-prod",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "4301", "-d", "frontend-angular/dist/remembermap-frontend-angular/browser"],
+      "port": 4301
     }
   ]
 }

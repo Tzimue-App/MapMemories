@@ -167,4 +167,53 @@ describe('MapView Component', () => {
 
     expect(onPinsChange).toHaveBeenCalled();
   });
+
+  describe('marker clustering', () => {
+    const colocatedPins = (count: number, radiusMeters = 0): PinItem[] =>
+      Array.from({ length: count }, (_, i) => ({
+        id: `pin-${i}`,
+        lat: 48.8566,
+        lng: 2.3522,
+        radiusMeters,
+        color: '#3B82F6',
+      }));
+
+    it('groups overlapping markers into a single cluster showing their count', () => {
+      const { container } = render(
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={colocatedPins(5)} />
+      );
+
+      const clusters = container.querySelectorAll('.remembermap-cluster');
+      expect(clusters).toHaveLength(1);
+      expect(clusters[0]).toHaveTextContent('5');
+      expect(container.querySelectorAll('.custom-pin-marker')).toHaveLength(0);
+    });
+
+    it('keeps radius circles visible for pins hidden inside a cluster', () => {
+      const { container } = render(
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={colocatedPins(3, 500)} />
+      );
+
+      expect(container.querySelectorAll('.remembermap-cluster')).toHaveLength(1);
+      expect(container.querySelectorAll('path.leaflet-interactive')).toHaveLength(3);
+    });
+
+    it('updates the cluster count when pins are removed', () => {
+      const { container, rerender } = render(
+        <MapView center={[48.8566, 2.3522]} zoom={13} initialPins={colocatedPins(4)} />
+      );
+      expect(container.querySelector('.remembermap-cluster')).toHaveTextContent('4');
+
+      rerender(<MapView center={[48.8566, 2.3522]} zoom={13} initialPins={colocatedPins(3)} />);
+      expect(container.querySelector('.remembermap-cluster')).toHaveTextContent('3');
+    });
+  });
+
+  describe('mobile-friendly controls', () => {
+    it('places the zoom control bottom-right, clear of the search header overlay', () => {
+      const { container } = render(<MapView center={[48.8566, 2.3522]} zoom={13} />);
+      expect(container.querySelector('.leaflet-bottom.leaflet-right .leaflet-control-zoom')).toBeInTheDocument();
+      expect(container.querySelector('.leaflet-top.leaflet-left .leaflet-control-zoom')).not.toBeInTheDocument();
+    });
+  });
 });

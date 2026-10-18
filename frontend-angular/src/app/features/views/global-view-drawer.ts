@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { FilterCriteria, UnifiedMapElement } from '../../models/view';
 import { filterModifications } from '../../shared/filter-modifications';
 import { formatCoordinates } from '../../shared/geo-area';
+import { SwipeToClose } from '../../shared/swipe-to-close';
 import { ElementCounts, FilterToolbar } from './filter-toolbar';
 
 const TYPE_BADGES = {
@@ -13,7 +14,7 @@ const TYPE_BADGES = {
 
 @Component({
   selector: 'app-global-view-drawer',
-  imports: [FilterToolbar, DatePipe],
+  imports: [FilterToolbar, DatePipe, SwipeToClose],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './global-view-drawer.html',
 })

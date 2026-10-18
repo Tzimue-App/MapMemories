@@ -66,6 +66,9 @@ jobs:
       - name: Run tests
         run: npm run test -- --run
 
+      - name: Production build (tsc + vite)
+        run: npm run build
+
   # ─── Frontend Angular Tests (Node + npm) ───────────────────
   frontend-angular-tests:
     name: "Frontend Angular Tests (Vitest)"

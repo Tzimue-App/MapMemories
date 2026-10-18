@@ -1,8 +1,10 @@
-<div class="relative w-screen h-screen overflow-hidden flex flex-col bg-gray-900">
+<div class="relative w-full h-dvh overflow-hidden flex flex-col bg-gray-900">
   <!-- Search & header overlay -->
-  <header class="absolute top-4 left-4 right-4 z-10 flex justify-between items-start pointer-events-none">
+  <header
+    class="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-10 flex flex-col-reverse sm:flex-row sm:justify-between items-stretch sm:items-start gap-2 pointer-events-none"
+  >
     <div
-      class="pointer-events-auto w-full max-w-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-3.5 rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50"
+      class="pointer-events-auto w-full max-w-xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-2.5 sm:p-3.5 rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50"
     >
       @if (!auth.isAuthenticated() && !auth.loading()) {
         <div
@@ -53,14 +55,14 @@
         <app-boundary-search (selectBoundary)="state.addBoundary($event)" />
       }
 
-      <div class="mt-2.5 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 px-1">
+      <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-400 px-1">
         @if (state.selectedPlace(); as place) {
           <span class="truncate max-w-[45%]">📌 {{ place }}</span>
         } @else {
           <span>Click map to drop pin &amp; radius</span>
         }
 
-        <div class="flex items-center space-x-2">
+        <div class="flex flex-wrap items-center gap-2">
           <button
             type="button"
             aria-label="Open memories directory"
@@ -128,7 +130,7 @@
     </div>
 
     <!-- Auth header button -->
-    <div class="pointer-events-auto ml-4">
+    <div class="pointer-events-auto self-end sm:self-auto sm:ml-4 shrink-0">
       @if (auth.user(); as user) {
         <div
           class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center space-x-3 text-xs"

@@ -7,6 +7,7 @@ import { PhotoUploader } from '../Media/PhotoUploader';
 import { mediaService } from '../../services/mediaService';
 import { noteService } from '../../services/noteService';
 import { calculateCircleArea, calculatePolygonArea, formatArea, formatCoordinates } from '../../utils/geoArea';
+import { useSwipeToClose } from '../../hooks/useSwipeToClose';
 
 interface DetailSideDrawerProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export const DetailSideDrawer: React.FC<DetailSideDrawerProps> = ({
   const [notes, setNotes] = useState<NoteItem[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const swipeHandlers = useSwipeToClose('right', onClose);
 
   useEffect(() => {
     if (element) {
@@ -104,7 +106,8 @@ export const DetailSideDrawer: React.FC<DetailSideDrawerProps> = ({
       {/* Slide-over panel */}
       <aside
         data-testid="detail-side-drawer"
-        className={`fixed top-0 right-0 bottom-0 w-84 sm:w-96 bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-800 z-40 flex flex-col transform transition-transform duration-300 ease-in-out ${
+        {...swipeHandlers}
+        className={`fixed top-0 right-0 bottom-0 w-full sm:w-96 pb-[env(safe-area-inset-bottom)] bg-white dark:bg-gray-900 shadow-2xl border-l border-gray-200 dark:border-gray-800 z-40 flex flex-col transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
