@@ -35,6 +35,9 @@ Frontend Bump: 2
 #### Patches
 - Test setups give Leaflet containers a real size in jsdom so viewport-culling plugins render markers.
 
+#### Bug Fixes
+- Angular production build: the map no longer fails to start (black screen). `leaflet.markercluster` registers on the global `L`, which the production bundle's `import * as L` copy never sees; `createClusterGroup()` now falls back to the global factory.
+
 ### Deployment & Configuration
 - Dockerfiles: `npm ci` with a cached dependency layer, pinned `nginx:1.27-alpine`, container `HEALTHCHECK`s for the frontends, Maven dependency layer and container-aware JVM flags for the backend; new `.dockerignore` files for `frontend/` and `backend/`.
 - nginx (both frontends): gzip, immutable caching for fingerprinted bundles, `no-cache` SPA shell, security headers, `client_max_body_size 16m` for photo uploads.

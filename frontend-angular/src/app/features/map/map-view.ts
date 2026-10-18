@@ -19,7 +19,7 @@ import * as L from 'leaflet';
 import { MapStateService } from '../../core/map-state.service';
 import { DEFAULT_BOUNDARY_COLOR, SavedBoundaryItem } from '../../models/boundary';
 import { PinItem } from '../../models/pin';
-import { CLUSTER_OPTIONS } from '../../shared/cluster';
+import { createClusterGroup } from '../../shared/cluster';
 import { parseGeoJson } from '../../shared/geo-area';
 import { BoundaryConfigPanel } from './boundary-config-panel';
 import { PinConfigPanel } from './pin-config-panel';
@@ -75,7 +75,7 @@ export class MapView {
   private readonly container = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
   private readonly map = signal<L.Map | undefined>(undefined);
   /** Markers live in the cluster group; radius circles go straight on the map so they stay visible. */
-  private readonly clusterGroup = L.markerClusterGroup(CLUSTER_OPTIONS);
+  private readonly clusterGroup = createClusterGroup();
   private readonly pinLayers = new Map<string, PinLayers>();
   private readonly boundaryLayers = new Map<string, BoundaryLayers>();
 

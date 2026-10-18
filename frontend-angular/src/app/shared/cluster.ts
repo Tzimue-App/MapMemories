@@ -33,3 +33,22 @@ export const CLUSTER_OPTIONS: L.MarkerClusterGroupOptions = {
   maxClusterRadius: 60,
   iconCreateFunction: (cluster) => createClusterIcon(cluster.getChildCount()),
 };
+
+type ClusterFactory = (options?: L.MarkerClusterGroupOptions) => L.MarkerClusterGroup;
+type ClusterHost = { markerClusterGroup?: ClusterFactory };
+
+/**
+ * leaflet.markercluster registers itself on the global `L`. The production bundle hands
+ * `import * as L` a snapshot copy of Leaflet's CommonJS exports taken before the plugin ran,
+ * so the factory is only reachable through the global there.
+ */
+export function resolveClusterFactory(namespace: ClusterHost, global: ClusterHost | undefined): ClusterFactory {
+  const factory = namespace.markerClusterGroup ?? global?.markerClusterGroup;
+  if (!factory) throw new Error('leaflet.markercluster is not loaded: markerClusterGroup is unavailable');
+  return factory;
+}
+
+export function createClusterGroup(options: L.MarkerClusterGroupOptions = CLUSTER_OPTIONS): L.MarkerClusterGroup {
+  const global = (globalThis as { L?: ClusterHost }).L;
+  return resolveClusterFactory(L as ClusterHost, global)(options);
+}
