@@ -1,0 +1,95 @@
+name: Improvement
+description: Refactoring, performance, security hardening, dependency upgrade, tooling, CI or docs. Nothing is broken and nothing new is user-visible.
+title: "<refactor|perf|security|chore|ci|docs|test>(<area>): <outcome>"
+labels: ["type: improvement", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Follow [the issue guidelines](../blob/main/.github/ISSUE_GUIDELINES.md).
+        Exploitable weaknesses go to *Security → Report a vulnerability*, not here.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Refactoring / clean code
+        - Performance
+        - Security hardening
+        - Dependency / framework upgrade
+        - Tooling / CI / DevOps
+        - Tests
+        - Documentation
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: areas
+    attributes:
+      label: Area
+      options:
+        - label: backend
+        - label: frontend (React)
+        - label: frontend-angular
+        - label: infra / Docker
+        - label: CI
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current state
+      description: What exists today, with `path/File:line` links, versions or measurements.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation and impact
+      description: What it costs to leave it as is (risk, time, money, support window).
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Steps, migration path, rollback plan for risky changes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Measurable. Include "no behaviour change" checks for refactorings.
+      value: |
+        - [ ] …
+        - [ ] **Non-regression:** all existing tests pass unchanged
+    validations:
+      required: true
+
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Related
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Definition of Done
+        - [ ] All acceptance criteria are checked
+        - [ ] CI (`test.yml`) is green
+        - [ ] `CHANGELOG.md` and docs updated
+        - [ ] PR into `dev` merged with `Closes #<issue>`
